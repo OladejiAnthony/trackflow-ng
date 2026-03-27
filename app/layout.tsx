@@ -1,10 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans, JetBrains_Mono, Geist } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -92,7 +90,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(inter.variable, plusJakarta.variable, jetbrainsMono.variable, "font-sans", geist.variable)}
+      className={cn(inter.variable, plusJakarta.variable, jetbrainsMono.variable, "font-sans")}
       suppressHydrationWarning
     >
       <head>

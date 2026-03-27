@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { AppButton as Button } from "@/components/ui/AppButton";
 import { Input, PasswordInput } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
 import { loginWithEmail, loginWithGoogle } from "../actions";

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Lock, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { AppButton as Button } from "@/components/ui/AppButton";
 import { PasswordInput } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
 import { resetPassword } from "../actions";
