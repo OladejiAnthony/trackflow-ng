@@ -20,6 +20,7 @@ create table if not exists public.profiles (
   currency              text not null default 'NGN',
   monthly_income        numeric(15,2),
   onboarding_completed  boolean not null default false,
+  is_admin              boolean not null default false,
   push_subscription     jsonb,
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()

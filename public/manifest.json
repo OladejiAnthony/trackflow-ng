@@ -1,12 +1,12 @@
 {
-  "name": "TrackFlow — Smart Finance",
+  "name": "TrackFlow",
   "short_name": "TrackFlow",
   "description": "Smart finance tracking for Nigerian individuals, families, and SMEs.",
   "start_url": "/dashboard",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#1a4ff5",
+  "background_color": "#0D1B3E",
+  "theme_color": "#0A6E5E",
   "lang": "en-NG",
   "categories": ["finance", "productivity"],
   "icons": [

@@ -9,139 +9,240 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // ─── Colors ────────────────────────────────────────────────────────────────
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        // Brand
-        brand: {
-          50:  "#eef5ff",
-          100: "#d9e8ff",
-          200: "#bcd6ff",
-          300: "#8ebbff",
-          400: "#5994ff",
-          500: "#3b74ff",
-          600: "#1a4ff5",
-          700: "#1540e1",
-          800: "#1836b6",
-          900: "#1a308f",
-          950: "#141f57",
+        // shadcn/Radix CSS-variable tokens
+        background:  "var(--background)",
+        foreground:  "var(--foreground)",
+        card: {
+          DEFAULT:    "var(--card)",
+          foreground: "var(--card-foreground)",
         },
-        // Accent — Nigerian green undertone
+        popover: {
+          DEFAULT:    "var(--popover)",
+          foreground: "var(--popover-foreground)",
+        },
+        primary: {
+          DEFAULT:    "var(--primary)",
+          foreground: "var(--primary-foreground)",
+        },
+        secondary: {
+          DEFAULT:    "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
+        },
+        muted: {
+          DEFAULT:    "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
         accent: {
-          50:  "#f0fdf4",
-          100: "#dcfce7",
-          200: "#bbf7d0",
-          300: "#86efac",
-          400: "#4ade80",
-          500: "#22c55e",
-          600: "#16a34a",
-          700: "#15803d",
-          800: "#166534",
-          900: "#14532d",
-          950: "#052e16",
+          DEFAULT:    "var(--accent)",
+          foreground: "var(--accent-foreground)",
         },
-        // Gold — premium feel
+        destructive: {
+          DEFAULT:    "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
+        },
+        border: "var(--border)",
+        input:  "var(--input)",
+        ring:   "var(--ring)",
+        // Chart tokens
+        chart: {
+          "1": "var(--chart-1)",
+          "2": "var(--chart-2)",
+          "3": "var(--chart-3)",
+          "4": "var(--chart-4)",
+          "5": "var(--chart-5)",
+        },
+        // Sidebar tokens
+        sidebar: {
+          DEFAULT:            "var(--sidebar)",
+          foreground:         "var(--sidebar-foreground)",
+          primary:            "var(--sidebar-primary)",
+          "primary-foreground": "var(--sidebar-primary-foreground)",
+          accent:             "var(--sidebar-accent)",
+          "accent-foreground": "var(--sidebar-accent-foreground)",
+          border:             "var(--sidebar-border)",
+          ring:               "var(--sidebar-ring)",
+        },
+
+        // ── TrackFlow brand palette ──────────────────────────────────────────
+        // Brand — TrackFlow Emerald (#0A6E5E primary)
+        brand: {
+          50:  "#ecfdf5",
+          100: "#d1fae5",
+          200: "#a7f3d0",
+          300: "#6EE7B7", // --tf-emerald-light
+          400: "#34d399",
+          500: "#10B981", // --tf-emerald
+          600: "#0A6E5E", // --tf-emerald-dark  ← primary action colour
+          700: "#065f46",
+          800: "#064e3b",
+          900: "#022c22",
+          950: "#011a15",
+        },
+        // Navy — dark backgrounds
+        navy: {
+          DEFAULT: "#0D1B3E", // --tf-navy
+          mid:     "#1E3A5F", // --tf-navy-mid
+          deep:    "#2d4a73",
+        },
+        // Gold — premium / CTA
         gold: {
           50:  "#fffbeb",
           100: "#fef3c7",
           200: "#fde68a",
-          300: "#fcd34d",
+          300: "#FCD34D", // --tf-gold-light
           400: "#fbbf24",
-          500: "#f59e0b",
+          500: "#F5A623", // --tf-gold
           600: "#d97706",
           700: "#b45309",
           800: "#92400e",
           900: "#78350f",
         },
-        // Semantic
-        success: "#22c55e",
-        warning: "#f59e0b",
+        // Semantic status
+        success: "#10B981",
+        warning: "#F5A623",
         danger:  "#ef4444",
         info:    "#3b82f6",
-        // Surface
+        // Surface neutrals
         surface: {
-          DEFAULT: "#ffffff",
-          50:  "#f8fafc",
-          100: "#f1f5f9",
-          200: "#e2e8f0",
-          300: "#cbd5e1",
-          dark:    "#0f172a",
-          "dark-2": "#1e293b",
-          "dark-3": "#334155",
+          DEFAULT:  "#ffffff",
+          50:       "#F9FAFB", // --tf-gray-50
+          100:      "#F3F4F6", // --tf-gray-100
+          200:      "#e2e8f0",
+          300:      "#cbd5e1",
+          dark:     "#0D1B3E", // --tf-navy
+          "dark-2": "#1E3A5F", // --tf-navy-mid
+          "dark-3": "#2d4a73",
         },
       },
+
+      // ─── Typography ────────────────────────────────────────────────────────────
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        display: ["var(--font-plus-jakarta)", "system-ui", "sans-serif"],
-        mono: ["var(--font-jetbrains-mono)", "monospace"],
+        // DM Sans — body / UI (loaded via next/font/google → CSS var)
+        sans:    ["var(--font-dm-sans)", "DM Sans", "system-ui", "sans-serif"],
+        // Clash Display — headings / display (loaded via FontShare CDN)
+        display: ["Clash Display", "var(--font-dm-sans)", "sans-serif"],
+        // JetBrains Mono — code / amounts (loaded via next/font/google → CSS var)
+        mono:    ["var(--font-jetbrains-mono)", "JetBrains Mono", "monospace"],
+        // Satoshi — alternative body (FontShare CDN)
+        satoshi: ["Satoshi", "var(--font-dm-sans)", "sans-serif"],
       },
+
+      // ─── Gradients ─────────────────────────────────────────────────────────────
       backgroundImage: {
+        // Hero / brand gradient (navy → emerald-dark → emerald)
         "gradient-brand":
-          "linear-gradient(135deg, #1a4ff5 0%, #3b74ff 50%, #5994ff 100%)",
+          "linear-gradient(135deg, #0D1B3E 0%, #0A6E5E 60%, #10B981 100%)",
+        // Gold CTA gradient
         "gradient-gold":
-          "linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%)",
+          "linear-gradient(90deg, #F5A623 0%, #FCD34D 100%)",
+        // Income / success
         "gradient-success":
-          "linear-gradient(135deg, #15803d 0%, #22c55e 100%)",
+          "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+        // Expense / danger
         "gradient-danger":
-          "linear-gradient(135deg, #b91c1c 0%, #ef4444 100%)",
+          "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
+        // Card interior
         "gradient-card":
-          "linear-gradient(135deg, rgba(59,116,255,0.08) 0%, rgba(91,148,255,0.04) 100%)",
+          "linear-gradient(145deg, #1E3A5F 0%, #0A6E5E 100%)",
+        // Full-dark background sweep
         "gradient-dark":
-          "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
+          "linear-gradient(135deg, #0D1B3E 0%, #1E3A5F 50%, #0D1B3E 100%)",
+        // Ambient mesh overlay
         "gradient-mesh":
-          "radial-gradient(at 40% 20%, hsla(228,100%,74%,0.15) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(189,100%,56%,0.1) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(355,100%,93%,0.05) 0px, transparent 50%)",
+          "radial-gradient(at 40% 20%, hsla(162,84%,39%,0.15) 0px, transparent 50%), " +
+          "radial-gradient(at 80% 0%,  hsla(166,82%,23%,0.12) 0px, transparent 50%), " +
+          "radial-gradient(at 0%  50%, hsla(38,90%,55%,0.06)  0px, transparent 50%)",
+        // Shimmer loading bar (used with animate-shimmer)
+        "gradient-shimmer":
+          "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
       },
+
+      // ─── Shadows ───────────────────────────────────────────────────────────────
       boxShadow: {
-        "card":     "0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.06)",
-        "card-md":  "0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.07)",
-        "card-lg":  "0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.08)",
-        "card-xl":  "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
-        "brand":    "0 4px 14px 0 rgba(26,79,245,0.3)",
-        "gold":     "0 4px 14px 0 rgba(245,158,11,0.3)",
-        "success":  "0 4px 14px 0 rgba(34,197,94,0.3)",
-        "inner-sm": "inset 0 1px 2px 0 rgba(0,0,0,0.05)",
-        "glow-brand": "0 0 20px rgba(59,116,255,0.4), 0 0 60px rgba(59,116,255,0.15)",
+        "card":       "0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.06)",
+        "card-md":    "0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.07)",
+        "card-lg":    "0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.08)",
+        "card-xl":    "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
+        "brand":      "0 4px 14px 0 rgba(10,110,94,0.35)",
+        "gold":       "0 4px 14px 0 rgba(245,166,35,0.35)",
+        "success":    "0 4px 14px 0 rgba(16,185,129,0.3)",
+        "inner-sm":   "inset 0 1px 2px 0 rgba(0,0,0,0.05)",
+        "glow-brand": "0 0 20px rgba(16,185,129,0.4), 0 0 60px rgba(10,110,94,0.2)",
+        "glow-gold":  "0 0 20px rgba(245,166,35,0.4), 0 0 60px rgba(245,166,35,0.15)",
       },
+
+      // ─── Border radius extensions ───────────────────────────────────────────────
       borderRadius: {
+        lg:   "var(--radius)",
+        md:   "calc(var(--radius) - 2px)",
+        sm:   "calc(var(--radius) - 4px)",
         "4xl": "2rem",
         "5xl": "2.5rem",
       },
+
+      // ─── Animations ────────────────────────────────────────────────────────────
       animation: {
+        // Entrances
         "fade-in":    "fadeIn 0.3s ease-in-out",
         "slide-up":   "slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
         "slide-down": "slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
         "scale-in":   "scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-        "spin-slow":  "spin 3s linear infinite",
-        "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "shimmer":    "shimmer 2s linear infinite",
-        "float":      "float 6s ease-in-out infinite",
+        // Loops
+        "float":        "float 6s ease-in-out infinite",
+        "pulse-glow":   "pulseGlow 2.5s ease-in-out infinite",
+        "spin-slow":    "spin 3s linear infinite",
+        "pulse-slow":   "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "shimmer":      "shimmer 2s linear infinite",
       },
+
+      // ─── Keyframes ─────────────────────────────────────────────────────────────
       keyframes: {
+        // Fade in (opacity only)
         fadeIn: {
           "0%":   { opacity: "0" },
           "100%": { opacity: "1" },
         },
+        // Slide up from slight offset
         slideUp: {
           "0%":   { opacity: "0", transform: "translateY(16px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        // Slide down from slight offset
         slideDown: {
           "0%":   { opacity: "0", transform: "translateY(-16px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        // Scale in from 95%
         scaleIn: {
           "0%":   { opacity: "0", transform: "scale(0.95)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
-        shimmer: {
-          "0%":   { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition: "200% 0" },
-        },
+        // Gentle vertical float
         float: {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%":      { transform: "translateY(-10px)" },
         },
+        // Emerald glow pulse (box-shadow breathe)
+        pulseGlow: {
+          "0%, 100%": {
+            boxShadow: "0 0 8px rgba(16,185,129,0.3), 0 0 20px rgba(10,110,94,0.15)",
+            opacity: "1",
+          },
+          "50%": {
+            boxShadow: "0 0 24px rgba(16,185,129,0.7), 0 0 60px rgba(10,110,94,0.4)",
+            opacity: "0.85",
+          },
+        },
+        // Horizontal shimmer sweep
+        shimmer: {
+          "0%":   { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
+
+      // ─── Breakpoints ───────────────────────────────────────────────────────────
       screens: {
         xs: "375px",
       },

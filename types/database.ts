@@ -21,6 +21,7 @@ export interface Database {
           currency: string;
           monthly_income: number | null;
           onboarding_completed: boolean;
+          is_admin: boolean;
           push_subscription: Json | null;
           created_at: string;
           updated_at: string;
@@ -36,6 +37,7 @@ export interface Database {
           currency?: string;
           monthly_income?: number | null;
           onboarding_completed?: boolean;
+          is_admin?: boolean;
           push_subscription?: Json | null;
           created_at?: string;
           updated_at?: string;
@@ -51,6 +53,7 @@ export interface Database {
           currency?: string;
           monthly_income?: number | null;
           onboarding_completed?: boolean;
+          is_admin?: boolean;
           push_subscription?: Json | null;
           updated_at?: string;
         };

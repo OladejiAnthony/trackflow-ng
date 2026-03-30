@@ -6,6 +6,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  labelClassName?: string;
   error?: string;
   hint?: string;
   leftIcon?: React.ReactNode;
@@ -13,7 +14,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, leftIcon, rightElement, className, type, id, ...props }, ref) => {
+  ({ label, labelClassName, error, hint, leftIcon, rightElement, className, type, id, ...props }, ref) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
 
     return (
@@ -21,7 +22,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
+            className={cn("block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5", labelClassName)}
           >
             {label}
           </label>

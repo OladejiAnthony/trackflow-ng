@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,9 +57,14 @@ export function LoginForm() {
     <div className="w-full max-w-md">
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-brand shadow-brand flex items-center justify-center mb-4">
-          <span className="text-white font-bold font-display text-2xl">T</span>
-        </div>
+        <Image
+          src="/assets/icon_mark_dark.png"
+          alt="TrackFlow"
+          width={52}
+          height={52}
+          priority
+          className="mb-4"
+        />
         <h1 className="text-2xl font-bold font-display text-white tracking-tight">
           Welcome back
         </h1>

@@ -1,3 +1,4 @@
+import type { NextConfig } from "next";
 import withPWA from "next-pwa";
 
 const pwaConfig = withPWA({
@@ -35,8 +36,7 @@ const pwaConfig = withPWA({
   ],
 });
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
     remotePatterns: [
@@ -55,9 +55,7 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ["@supabase/ssr"],
-  },
+  serverExternalPackages: ["@supabase/ssr"],
 };
 
 export default pwaConfig(nextConfig);

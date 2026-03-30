@@ -37,21 +37,43 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Public routes that don't need auth
-  const publicRoutes = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/api/auth"];
-  const isPublicRoute = publicRoutes.some((r) => pathname === r || pathname.startsWith("/api/auth"));
+  // Routes that never require authentication
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/webhooks");
 
+  // Unauthenticated user hitting a protected route → redirect to /login
   if (!user && !isPublicRoute) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(redirectUrl);
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  if (user && (pathname === "/login" || pathname === "/register")) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
-    return NextResponse.redirect(redirectUrl);
+  if (user) {
+    // Authenticated user hitting auth pages → redirect to /dashboard
+    if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+
+    // Admin route — require is_admin on the profile
+    if (pathname.startsWith("/admin")) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .returns<Array<{ is_admin: boolean }>>()
+        .single();
+
+      if (!profile?.is_admin) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    }
   }
 
   return supabaseResponse;
