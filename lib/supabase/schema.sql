@@ -22,9 +22,15 @@ create table if not exists public.profiles (
   onboarding_completed  boolean not null default false,
   is_admin              boolean not null default false,
   push_subscription     jsonb,
+  date_of_birth         date,
+  state                 text,
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
 );
+
+-- Idempotent column additions for existing deployments
+alter table public.profiles add column if not exists date_of_birth date;
+alter table public.profiles add column if not exists state text;
 
 alter table public.profiles enable row level security;
 
@@ -41,15 +47,18 @@ create policy "Users can insert own profile"
   with check (auth.uid() = id);
 
 -- Auto-create profile on signup
+-- Reads full_name, account_type, phone, and avatar_url from OAuth / signup metadata
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, full_name, avatar_url)
+  insert into public.profiles (id, email, full_name, avatar_url, phone, account_type)
   values (
     new.id,
     new.email,
     new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'avatar_url'
+    new.raw_user_meta_data->>'avatar_url',
+    new.raw_user_meta_data->>'phone',
+    coalesce(new.raw_user_meta_data->>'account_type', 'individual')
   );
   return new;
 end;

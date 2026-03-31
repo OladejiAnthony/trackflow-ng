@@ -19,6 +19,8 @@ interface AppState {
   // Quick add transaction modal
   addTransactionOpen: boolean;
   setAddTransactionOpen: (open: boolean) => void;
+  initialTransactionType: "income" | "expense";
+  setInitialTransactionType: (type: "income" | "expense") => void;
 
   // Active month filter (ISO string of first day of month)
   activeMonth: string;
@@ -46,6 +48,8 @@ export const useAppStore = create<AppState>()(
 
       addTransactionOpen: false,
       setAddTransactionOpen: (open) => set({ addTransactionOpen: open }),
+      initialTransactionType: "expense",
+      setInitialTransactionType: (type) => set({ initialTransactionType: type }),
 
       activeMonth: getFirstDayOfCurrentMonth(),
       setActiveMonth: (month) => set({ activeMonth: month }),

@@ -94,8 +94,7 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=satoshi@400,500,700&display=swap"
         />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-        <meta name="mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="antialiased min-h-screen">

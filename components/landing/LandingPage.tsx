@@ -417,10 +417,10 @@ export function LandingPage() {
                   Start Free for 60 Days
                   <ArrowRight className="w-4 h-4" />
                 </AppButton>
-                <button className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-white/30 text-white font-semibold text-base hover:bg-white/10 active:scale-[0.98] transition-all duration-150">
+                <a href="#features" className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-white/30 text-white font-semibold text-base hover:bg-white/10 active:scale-[0.98] transition-all duration-150">
                   <Play className="w-4 h-4 fill-white" />
                   Watch Demo
-                </button>
+                </a>
               </motion.div>
 
               {/* Stat badges */}

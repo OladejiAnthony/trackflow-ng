@@ -4,6 +4,23 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 
+// ─── Error mapping ────────────────────────────────────────────────────────────
+
+function mapAuthError(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes("rate limit") || m.includes("email rate") || m.includes("over_email_send_rate_limit"))
+    return "Too many attempts — please wait a few minutes, then try again.";
+  if (m.includes("already registered") || m.includes("user already exists") || m.includes("email already"))
+    return "An account with this email already exists. Try signing in instead.";
+  if (m.includes("invalid email") || m.includes("email address"))
+    return "Please enter a valid email address.";
+  if (m.includes("weak password") || m.includes("password should"))
+    return "Password is too weak. Please choose a stronger password.";
+  if (m.includes("network") || m.includes("fetch"))
+    return "Network error — check your connection and try again.";
+  return msg;
+}
+
 // ─── Login ────────────────────────────────────────────────────────────────────
 
 export async function loginWithEmail(formData: FormData) {
@@ -15,7 +32,7 @@ export async function loginWithEmail(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return { error: error.message };
+    return { error: mapAuthError(error.message) };
   }
 
   redirect(redirectTo);
@@ -43,7 +60,7 @@ export async function registerWithEmail(formData: FormData) {
     },
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: mapAuthError(error.message) };
   return { success: true };
 }
 
@@ -57,7 +74,7 @@ export async function resendVerificationEmail(email: string) {
     options: { emailRedirectTo: `${origin}/api/auth/callback?next=/onboarding/welcome` },
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: mapAuthError(error.message) };
   return { success: true };
 }
 
@@ -73,14 +90,14 @@ export async function checkEmailAvailable(email: string) {
 
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
 
-export async function loginWithGoogle() {
+export async function loginWithGoogle(next = "/dashboard") {
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${origin}/api/auth/callback?next=/dashboard`,
+      redirectTo: `${origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
       queryParams: { access_type: "offline", prompt: "consent" },
     },
   });
@@ -106,7 +123,7 @@ export async function forgotPassword(formData: FormData) {
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: mapAuthError(error.message) };
   }
 
   return { success: true };
@@ -124,7 +141,7 @@ export async function resetPassword(formData: FormData) {
     return { error: error.message };
   }
 
-  redirect("/dashboard");
+  return { success: true };
 }
 
 // ─── Logout ───────────────────────────────────────────────────────────────────

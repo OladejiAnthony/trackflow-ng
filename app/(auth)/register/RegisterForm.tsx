@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { AppButton as Button } from "@/components/ui/AppButton";
 import { Input, PasswordInput } from "@/components/ui/Input";
+import { Alert } from "@/components/ui/Alert";
 import { cn } from "@/lib/utils";
 import {
   registerWithEmail,
@@ -221,19 +222,14 @@ export default function RegisterForm() {
 
   async function handleGoogle() {
     setGooglePending(true);
-    await loginWithGoogle();
+    await loginWithGoogle("/verify-email?source=google");
     setGooglePending(false);
   }
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div
-      className={cn(
-        "w-full transition-all duration-300",
-        step === 1 ? "max-w-3xl" : "max-w-md"
-      )}
-    >
+    <div className="w-full max-w-md">
       {/* Logo */}
       <div className="flex flex-col items-center mb-6">
         <Image
@@ -268,7 +264,7 @@ export default function RegisterForm() {
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="space-y-3 mb-6">
               {ACCOUNT_TYPES.map(({ id, icon: Icon, title, description, benefits }) => {
                 const selected = accountType === id;
                 return (
@@ -277,7 +273,7 @@ export default function RegisterForm() {
                     type="button"
                     onClick={() => setAccountType(id)}
                     className={cn(
-                      "rounded-2xl border-2 p-6 text-left cursor-pointer transition-all duration-200 focus:outline-none",
+                      "w-full rounded-2xl border-2 p-4 text-left cursor-pointer transition-all duration-200 focus:outline-none flex items-start gap-4",
                       selected
                         ? "border-gold-500 bg-gold-500/10 shadow-glow-gold"
                         : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/[0.08]"
@@ -286,52 +282,60 @@ export default function RegisterForm() {
                     {/* Icon */}
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors",
+                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors mt-0.5",
                         selected ? "bg-gold-500/20" : "bg-white/10"
                       )}
                     >
                       <Icon
                         className={cn(
-                          "w-6 h-6 transition-colors",
+                          "w-5 h-5 transition-colors",
                           selected ? "text-gold-400" : "text-slate-400"
                         )}
                       />
                     </div>
 
-                    {/* Title + description */}
-                    <h3
-                      className={cn(
-                        "font-semibold font-display text-base mb-1 transition-colors",
-                        selected ? "text-gold-300" : "text-white"
-                      )}
-                    >
-                      {title}
-                    </h3>
-                    <p className="text-slate-400 text-xs leading-relaxed mb-4">
-                      {description}
-                    </p>
-
-                    {/* Benefits */}
-                    <ul className="space-y-1.5">
-                      {benefits.map((b) => (
-                        <li key={b} className="flex items-center gap-2">
-                          <CheckCircle2
-                            className={cn(
-                              "w-3.5 h-3.5 shrink-0 transition-colors",
-                              selected ? "text-brand-400" : "text-slate-600"
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              "text-xs transition-colors",
-                              selected ? "text-slate-300" : "text-slate-500"
-                            )}
-                          >
-                            {b}
+                    {/* Text */}
+                    <div className="flex-1 min-w-0">
+                      <h3
+                        className={cn(
+                          "font-semibold font-display text-sm mb-0.5 transition-colors",
+                          selected ? "text-gold-300" : "text-white"
+                        )}
+                      >
+                        {title}
+                      </h3>
+                      <p className="text-slate-400 text-xs leading-relaxed mb-2">
+                        {description}
+                      </p>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        {benefits.map((b) => (
+                          <span key={b} className="flex items-center gap-1">
+                            <CheckCircle2
+                              className={cn(
+                                "w-3 h-3 shrink-0 transition-colors",
+                                selected ? "text-brand-400" : "text-slate-600"
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                "text-[11px] transition-colors",
+                                selected ? "text-slate-300" : "text-slate-500"
+                              )}
+                            >
+                              {b}
+                            </span>
                           </span>
-                        </li>
-                      ))}
-                    </ul>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Selected indicator */}
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all mt-0.5",
+                      selected ? "border-gold-500 bg-gold-500" : "border-white/20"
+                    )}>
+                      {selected && <div className="w-2 h-2 rounded-full bg-navy" />}
+                    </div>
                   </button>
                 );
               })}
@@ -382,9 +386,9 @@ export default function RegisterForm() {
               </button>
 
               {serverError && (
-                <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                <Alert variant="error" className="mb-5">
                   {serverError}
-                </div>
+                </Alert>
               )}
 
               {/* Google OAuth */}
@@ -506,7 +510,7 @@ export default function RegisterForm() {
                     {...register("password")}
                   />
                   {passwordValue && (
-                    <div className=" flex flex-wrap gap-1.5">
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       {passwordRules.map((rule) => (
                         <span
                           key={rule.label}
@@ -619,7 +623,9 @@ export default function RegisterForm() {
             </p>
 
             {resendError && (
-              <p className="mb-4 text-xs text-red-400">{resendError}</p>
+              <Alert variant="error" className="mb-4 text-left">
+                {resendError}
+              </Alert>
             )}
 
             <Button

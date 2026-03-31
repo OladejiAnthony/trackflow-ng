@@ -42,7 +42,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               leftIcon && "pl-10",
               rightElement && "pr-12",
               error &&
-                "border-red-400 dark:border-red-500 focus:ring-red-400 focus:border-transparent",
+              "border-red-400 dark:border-red-500 focus:ring-red-400 focus:border-transparent",
               className
             )}
             {...props}
@@ -55,7 +55,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         </div>
         {error && (
           <p className="mt-1.5 text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
-            <span className="inline-block w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">!</span>
+            <span className=" w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">!</span>
             {error}
           </p>
         )}

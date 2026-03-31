@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,7 +11,7 @@ import { useSearchParams } from "next/navigation";
 import { AppButton as Button } from "@/components/ui/AppButton";
 import { Input, PasswordInput } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
-import { loginWithEmail, loginWithGoogle } from "../actions";
+import { loginWithEmail, loginWithGoogle, resendVerificationEmail } from "../actions";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -19,6 +19,25 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+
+function mapAuthError(raw: string): { message: string; isUnverified: boolean } {
+  const lower = raw.toLowerCase();
+  if (lower.includes("invalid login credentials")) {
+    return { message: "Wrong email or password. Please check and try again.", isUnverified: false };
+  }
+  if (lower.includes("email not confirmed")) {
+    return { message: "", isUnverified: true };
+  }
+  if (lower.includes("too many requests") || lower.includes("rate limit")) {
+    return { message: "Too many attempts. Please wait a moment before trying again.", isUnverified: false };
+  }
+  if (lower.includes("user not found")) {
+    return { message: "No account found with that email address.", isUnverified: false };
+  }
+  return { message: raw, isUnverified: false };
+}
+
+const RESEND_COOLDOWN = 60;
 
 export function LoginForm() {
   const searchParams = useSearchParams();
@@ -28,6 +47,20 @@ export function LoginForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [googlePending, setGooglePending] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Email-not-verified state
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resendPending, setResendPending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
 
   const {
     register,
@@ -37,13 +70,23 @@ export function LoginForm() {
 
   function onSubmit(data: FormData) {
     setServerError(null);
+    setUnverifiedEmail(null);
+    setResendSuccess(false);
     startTransition(async () => {
       const fd = new FormData();
       fd.set("email", data.email);
       fd.set("password", data.password);
       fd.set("redirect", redirect);
+      fd.set("remember", String(rememberMe));
       const result = await loginWithEmail(fd);
-      if (result?.error) setServerError(result.error);
+      if (result?.error) {
+        const { message, isUnverified } = mapAuthError(result.error);
+        if (isUnverified) {
+          setUnverifiedEmail(data.email);
+        } else {
+          setServerError(message);
+        }
+      }
     });
   }
 
@@ -51,6 +94,26 @@ export function LoginForm() {
     setGooglePending(true);
     await loginWithGoogle();
     setGooglePending(false);
+  }
+
+  async function handleResend() {
+    if (!unverifiedEmail || resendCooldown > 0) return;
+    setResendPending(true);
+    const result = await resendVerificationEmail(unverifiedEmail);
+    setResendPending(false);
+    if (!result?.error) {
+      setResendSuccess(true);
+      setResendCooldown(RESEND_COOLDOWN);
+      cooldownRef.current = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(cooldownRef.current!);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
   }
 
   return (
@@ -83,6 +146,28 @@ export function LoginForm() {
         {serverError && (
           <Alert variant="error" className="mb-5">
             {serverError}
+          </Alert>
+        )}
+        {unverifiedEmail && !resendSuccess && (
+          <Alert variant="warning" className="mb-5">
+            <span>Your email hasn&apos;t been verified yet. </span>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendPending || resendCooldown > 0}
+              className="font-semibold underline underline-offset-2 hover:no-underline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resendPending
+                ? "Sending…"
+                : resendCooldown > 0
+                ? `Resend in ${resendCooldown}s`
+                : "Resend verification email"}
+            </button>
+          </Alert>
+        )}
+        {resendSuccess && (
+          <Alert variant="success" className="mb-5">
+            Verification email sent — check your inbox.
           </Alert>
         )}
 
@@ -141,6 +226,17 @@ export function LoginForm() {
               </Link>
             </div>
           </div>
+
+          {/* Remember me */}
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-600 bg-slate-800 accent-brand-500 cursor-pointer"
+            />
+            <span className="text-sm text-slate-400">Remember me</span>
+          </label>
 
           <Button
             type="submit"

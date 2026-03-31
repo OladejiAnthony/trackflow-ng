@@ -23,6 +23,8 @@ export interface Database {
           onboarding_completed: boolean;
           is_admin: boolean;
           push_subscription: Json | null;
+          date_of_birth: string | null;
+          state: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -39,6 +41,8 @@ export interface Database {
           onboarding_completed?: boolean;
           is_admin?: boolean;
           push_subscription?: Json | null;
+          date_of_birth?: string | null;
+          state?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -55,8 +59,11 @@ export interface Database {
           onboarding_completed?: boolean;
           is_admin?: boolean;
           push_subscription?: Json | null;
+          date_of_birth?: string | null;
+          state?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       transactions: {
         Row: {
@@ -107,6 +114,7 @@ export interface Database {
           budget_id?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       budgets: {
         Row: {
@@ -154,6 +162,7 @@ export interface Database {
           is_active?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
       goals: {
         Row: {
@@ -198,6 +207,7 @@ export interface Database {
           is_completed?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
       notifications: {
         Row: {
@@ -223,6 +233,7 @@ export interface Database {
         Update: {
           is_read?: boolean;
         };
+        Relationships: [];
       };
       subscriptions: {
         Row: {
@@ -255,6 +266,7 @@ export interface Database {
           next_billing_date?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: {
@@ -264,6 +276,9 @@ export interface Database {
       [_ in never]: never;
     };
     Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
       [_ in never]: never;
     };
   };

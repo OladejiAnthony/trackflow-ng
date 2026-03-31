@@ -1,0 +1,158 @@
+<!--
+  TrackFlow — Confirm Signup Email Template
+  ==========================================
+  WHERE TO PASTE:
+    Supabase Dashboard → Authentication → Email Templates → Confirm signup
+
+  Required Supabase variable:
+    {{ .ConfirmationURL }} — auto-injected by Supabase; do not change it.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirm your TrackFlow account</title>
+</head>
+<body style="margin:0;padding:0;background-color:#060E1F;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+  <!-- Outer wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#060E1F;min-height:100vh;">
+    <tr>
+      <td align="center" style="padding:48px 16px;">
+
+        <!-- Card -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background-color:#0D1B3E;border-radius:20px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
+
+          <!-- Top accent bar -->
+          <tr>
+            <td style="height:4px;background:linear-gradient(90deg,#10B981 0%,#0A6E5E 50%,#1E3A5F 100%);"></td>
+          </tr>
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding:40px 40px 0 40px;">
+              <!-- Logo (text-based, no external image) -->
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#10B981,#0A6E5E);border-radius:12px;padding:10px 14px;">
+                    <span style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">TF</span>
+                  </td>
+                  <td style="padding-left:12px;">
+                    <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">TrackFlow</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Icon circle -->
+          <tr>
+            <td align="center" style="padding:36px 40px 0 40px;">
+              <div style="width:72px;height:72px;background:linear-gradient(135deg,#0D1B3E 0%,#0A6E5E 60%,#10B981 100%);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;">
+                <!-- Envelope SVG -->
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='16' x='2' y='4' rx='2'/%3E%3Cpath d='m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'/%3E%3C/svg%3E" width="36" height="36" alt="" style="display:block;" />
+              </div>
+            </td>
+          </tr>
+
+          <!-- Headline -->
+          <tr>
+            <td align="center" style="padding:28px 40px 0 40px;">
+              <h1 style="margin:0;font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;line-height:1.2;">
+                Confirm your account
+              </h1>
+              <p style="margin:12px 0 0 0;font-size:15px;color:#94A3B8;line-height:1.6;">
+                You&rsquo;re one click away from taking control of your finances.<br />
+                Start tracking your Naira the smart way.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:28px 40px 0 40px;">
+              <div style="height:1px;background:rgba(255,255,255,0.07);"></div>
+            </td>
+          </tr>
+
+          <!-- Body copy -->
+          <tr>
+            <td style="padding:28px 40px 0 40px;">
+              <p style="margin:0;font-size:14px;color:#94A3B8;line-height:1.7;">
+                Hi there,
+              </p>
+              <p style="margin:12px 0 0 0;font-size:14px;color:#94A3B8;line-height:1.7;">
+                Thanks for signing up for <strong style="color:#ffffff;">TrackFlow</strong> — Nigeria&rsquo;s smartest personal finance app. Click the button below to confirm your email address and activate your account.
+              </p>
+              <p style="margin:12px 0 0 0;font-size:14px;color:#94A3B8;line-height:1.7;">
+                Your 60-day free trial starts the moment you confirm.
+              </p>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td align="center" style="padding:32px 40px 0 40px;">
+              <a href="{{ .ConfirmationURL }}"
+                 style="display:inline-block;background:linear-gradient(135deg,#10B981,#0A6E5E);color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:16px 36px;border-radius:12px;letter-spacing:0.2px;">
+                Confirm Email Address &rarr;
+              </a>
+            </td>
+          </tr>
+
+          <!-- Expiry note -->
+          <tr>
+            <td align="center" style="padding:16px 40px 0 40px;">
+              <p style="margin:0;font-size:12px;color:#475569;">
+                This link expires in 24 hours.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Fallback link -->
+          <tr>
+            <td style="padding:28px 40px 0 40px;">
+              <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:16px;">
+                <p style="margin:0;font-size:12px;color:#64748B;line-height:1.6;">
+                  Button not working? Copy and paste this link into your browser:
+                </p>
+                <p style="margin:6px 0 0 0;font-size:11px;color:#10B981;word-break:break-all;line-height:1.5;">
+                  {{ .ConfirmationURL }}
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer divider -->
+          <tr>
+            <td style="padding:32px 40px 0 40px;">
+              <div style="height:1px;background:rgba(255,255,255,0.07);"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:24px 40px 40px 40px;">
+              <p style="margin:0;font-size:12px;color:#475569;line-height:1.7;">
+                &copy; 2025 TrackFlow &bull; Built for Nigeria<br />
+                If you didn&rsquo;t create an account, you can safely ignore this email.
+              </p>
+              <p style="margin:10px 0 0 0;font-size:12px;color:#475569;">
+                Questions? <a href="mailto:trackflownigeria@gmail.com" style="color:#10B981;text-decoration:none;">trackflownigeria@gmail.com</a>
+              </p>
+              <p style="margin:10px 0 0 0;font-size:11px;color:#334155;">
+                TrackFlow &bull; Lagos, Nigeria
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

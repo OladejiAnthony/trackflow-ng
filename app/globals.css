@@ -145,6 +145,14 @@
     -webkit-text-fill-color: var(--foreground) !important;
     transition: background-color 5000s ease-in-out 0s;
   }
+  /* Auth panel autofill — keep the navy-mid bg colour */
+  .auth-panel input:-webkit-autofill,
+  .auth-panel input:-webkit-autofill:hover,
+  .auth-panel input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #1e3a5f inset !important;
+    -webkit-text-fill-color: #ffffff !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
   .theme {
     --font-heading: var(--font-dm-sans);
     --font-sans: var(--font-dm-sans);
@@ -266,6 +274,17 @@
   }
   .input-field:focus {
     @apply ring-2 ring-brand-500 border-transparent;
+  }
+
+  /* Auth form panel — force navy-mid bg + green focus ring on all inputs */
+  .auth-panel .input-field {
+    background: #1e3a5f !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    @apply text-white placeholder:text-slate-500;
+  }
+  .auth-panel .input-field:focus {
+    @apply ring-2 ring-brand-500 border-transparent;
+    background: #1e3a5f !important;
   }
 
   /* Page typography */
