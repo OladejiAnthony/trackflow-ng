@@ -61,17 +61,41 @@ export async function saveOnboardingBudget(formData: FormData) {
   const incomeRaw       = formData.get("monthly_income") as string;
   const budgetLimitRaw  = formData.get("budget_limit")   as string;
   const categories      = formData.getAll("categories")   as string[];
+  const morningHourRaw  = formData.get("morning_hour")   as string;
+  const eveningHourRaw  = formData.get("evening_hour")   as string;
 
   const monthly_income = incomeRaw  ? parseFloat(incomeRaw.replace(/[^0-9.]/g, ""))  : null;
   const budget_limit   = budgetLimitRaw ? parseFloat(budgetLimitRaw.replace(/[^0-9.]/g, "")) : null;
+  const morning_hour   = morningHourRaw ? parseInt(morningHourRaw, 10) : null;
+  const evening_hour   = eveningHourRaw ? parseInt(eveningHourRaw, 10) : null;
 
-  // Update income
-  if (monthly_income !== null) {
+  // Update profile fields (income + notification times)
+  const profileUpdate: Record<string, number> = {};
+  if (monthly_income !== null) profileUpdate.monthly_income = monthly_income;
+  if (morning_hour   !== null) profileUpdate.morning_hour   = morning_hour;
+  if (evening_hour   !== null) profileUpdate.evening_hour   = evening_hour;
+
+  if (Object.keys(profileUpdate).length > 0) {
     const { error } = await supabase
       .from("profiles")
-      .update({ monthly_income })
+      .update(profileUpdate)
       .eq("id", user.id);
-    if (error) return { error: error.message };
+    // Ignore schema cache errors for morning/evening (columns may not exist yet)
+    if (error) {
+      const isSchemaError =
+        error.message.includes("column") ||
+        error.message.includes("schema cache") ||
+        (error as { code?: string }).code === "PGRST204";
+      if (!isSchemaError) return { error: error.message };
+      // Retry with only monthly_income if schema error
+      if (monthly_income !== null) {
+        const { error: retryErr } = await supabase
+          .from("profiles")
+          .update({ monthly_income })
+          .eq("id", user.id);
+        if (retryErr) return { error: retryErr.message };
+      }
+    }
   }
 
   // Create one budget entry per selected category

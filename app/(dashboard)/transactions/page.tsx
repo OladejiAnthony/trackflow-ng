@@ -26,24 +26,24 @@ import type { Transaction } from "@/types";
 
 const DATE_RANGE_OPTIONS = [
   { value: "today" as const, label: "Today" },
-  { value: "week"  as const, label: "This Week" },
+  { value: "week" as const, label: "This Week" },
   { value: "month" as const, label: "This Month" },
-  { value: "all"   as const, label: "All Time" },
-  { value: "custom"as const, label: "Custom" },
+  { value: "all" as const, label: "All Time" },
+  { value: "custom" as const, label: "Custom" },
 ] as const;
 
 const TYPE_OPTIONS = [
-  { value: "all"     as const, label: "All" },
-  { value: "income"  as const, label: "Income" },
+  { value: "all" as const, label: "All" },
+  { value: "income" as const, label: "Income" },
   { value: "expense" as const, label: "Expenses" },
 ] as const;
 
 const PAYMENT_METHODS = [
-  { value: "cash",     label: "Cash",     emoji: "💵" },
+  { value: "cash", label: "Cash", emoji: "💵" },
   { value: "transfer", label: "Transfer", emoji: "📲" },
-  { value: "card",     label: "Card",     emoji: "💳" },
-  { value: "pos",      label: "POS",      emoji: "🖥️" },
-  { value: "ussd",     label: "USSD",     emoji: "📞" },
+  { value: "card", label: "Card", emoji: "💳" },
+  { value: "pos", label: "POS", emoji: "🖥️" },
+  { value: "ussd", label: "USSD", emoji: "📞" },
 ];
 
 // ─── CSV helpers ──────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ const PAYMENT_METHODS = [
 const CSV_HEADERS = "Date,Type,Category,Description,Amount (₦),Payment Method,Note";
 
 function txToCsvRow(t: Transaction): string {
-  const pm  = (t.tags ?? []).find((tag) =>
+  const pm = (t.tags ?? []).find((tag) =>
     ["cash", "transfer", "card", "pos", "ussd"].includes(tag)
   ) ?? "";
   const esc = (s: string) => `"${(s ?? "").replace(/"/g, '""')}"`;
@@ -68,9 +68,9 @@ function txToCsvRow(t: Transaction): string {
 
 function downloadCsv(content: string, filename: string) {
   const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href     = url;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
@@ -81,7 +81,7 @@ function downloadCsv(content: string, filename: string) {
 function getDateLabel(dateStr: string): string {
   try {
     const d = parseISO(dateStr);
-    if (isToday(d))     return "Today";
+    if (isToday(d)) return "Today";
     if (isYesterday(d)) return "Yesterday";
     return format(d, "EEE, d MMM yyyy");
   } catch {
@@ -108,12 +108,19 @@ function CategoryMultiSelect({
   onChange: (v: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     function handle(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+      if (
+        !buttonRef.current?.contains(e.target as Node) &&
+        !dropdownRef.current?.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
@@ -124,18 +131,33 @@ function CategoryMultiSelect({
     selected.length === 0
       ? "Category"
       : selected.length === 1
-      ? (TRANSACTION_CATEGORIES[selected[0] as keyof typeof TRANSACTION_CATEGORIES]?.label ?? selected[0])
-      : `${selected.length} categories`;
+        ? (TRANSACTION_CATEGORIES[selected[0] as keyof typeof TRANSACTION_CATEGORIES]?.label ?? selected[0])
+        : `${selected.length} categories`;
 
   function toggle(key: string) {
     onChange(selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key]);
   }
 
+  function handleOpen() {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDropdownStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: Math.max(rect.width, 224),
+        zIndex: 9999,
+      });
+    }
+    setOpen((v) => !v);
+  }
+
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div className="relative flex-shrink-0">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleOpen}
         className={cn(
           "flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium whitespace-nowrap transition-all",
           selected.length > 0
@@ -150,11 +172,13 @@ function CategoryMultiSelect({
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={dropdownRef}
+            style={dropdownStyle}
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.12 }}
-            className="absolute top-full left-0 z-50 mt-1.5 w-56 bg-[#0D1B3E] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+            className="bg-[#0D1B3E] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
           >
             <div className="p-1.5 max-h-64 overflow-y-auto">
               {allCategories.map(([key, meta]) => (
@@ -203,21 +227,21 @@ function SummaryBar({
       value: income,
       Icon: TrendingUp,
       color: "text-emerald-400",
-      bg:    "bg-emerald-500/10 border-emerald-500/20",
+      bg: "bg-emerald-500/10 border-emerald-500/20",
     },
     {
       label: "Expenses",
       value: expenses,
       Icon: TrendingDown,
       color: "text-red-400",
-      bg:    "bg-red-500/10 border-red-500/20",
+      bg: "bg-red-500/10 border-red-500/20",
     },
     {
       label: "Net",
       value: net,
       Icon: net >= 0 ? TrendingUp : TrendingDown,
       color: net >= 0 ? "text-brand-400" : "text-red-400",
-      bg:    net >= 0 ? "bg-brand-500/10 border-brand-500/20" : "bg-red-500/10 border-red-500/20",
+      bg: net >= 0 ? "bg-brand-500/10 border-brand-500/20" : "bg-red-500/10 border-red-500/20",
     },
   ];
 
@@ -256,11 +280,11 @@ function TransactionCard({
   isDeleting: boolean;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const meta    = TRANSACTION_CATEGORIES[transaction.category as keyof typeof TRANSACTION_CATEGORIES];
+  const meta = TRANSACTION_CATEGORIES[transaction.category as keyof typeof TRANSACTION_CATEGORIES];
   const isIncome = transaction.type === "income";
-  const tags    = transaction.tags ?? [];
+  const tags = transaction.tags ?? [];
   const pmValue = tags.find((t) => ["cash", "transfer", "card", "pos", "ussd"].includes(t));
-  const pm      = PAYMENT_METHODS.find((p) => p.value === pmValue);
+  const pm = PAYMENT_METHODS.find((p) => p.value === pmValue);
   const timeStr = transaction.created_at
     ? format(new Date(transaction.created_at), "h:mm a")
     : "";
@@ -365,10 +389,10 @@ function TransactionCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function TransactionsPage() {
-  const [filters, setFilters]         = useState<TransactionFilters>({ ...DEFAULT_FILTERS });
+  const [filters, setFilters] = useState<TransactionFilters>({ ...DEFAULT_FILTERS });
   const [searchInput, setSearchInput] = useState("");
-  const [deletingId, setDeletingId]   = useState<string | null>(null);
-  const [exporting, setExporting]     = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { setAddTransactionOpen, openEditTransaction } = useAppStore();
@@ -406,13 +430,13 @@ export default function TransactionsPage() {
 
   // Flatten + group by date
   const allTransactions = useMemo(() => data?.pages.flat() ?? [], [data]);
-  const grouped         = useMemo(() => groupByDate(allTransactions), [allTransactions]);
+  const grouped = useMemo(() => groupByDate(allTransactions), [allTransactions]);
 
   async function handleExport() {
     setExporting(true);
     try {
       const rows = await exportFn(filters);
-      const csv  = [CSV_HEADERS, ...rows.map(txToCsvRow)].join("\n");
+      const csv = [CSV_HEADERS, ...rows.map(txToCsvRow)].join("\n");
       downloadCsv(csv, `trackflow-${format(new Date(), "yyyy-MM-dd")}.csv`);
       toast.success(`Exported ${rows.length} transaction${rows.length !== 1 ? "s" : ""}`);
     } catch {
@@ -443,7 +467,7 @@ export default function TransactionsPage() {
         {/* Title row */}
         <div className="flex items-center justify-between px-4 pt-5 pb-3">
           <div>
-            <h1 className="text-xl font-bold font-display text-white tracking-tight">Transactions</h1>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-0.5">Transactions</h1>
             <p className="text-xs text-slate-500 mt-0.5">
               {allTransactions.length > 0
                 ? `${allTransactions.length}${hasNextPage ? "+" : ""} records`
@@ -495,9 +519,9 @@ export default function TransactionsPage() {
 
           {TYPE_OPTIONS.map(({ value, label }) => {
             const activeClass =
-              value === "income"  ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" :
-              value === "expense" ? "bg-red-500/20 border-red-500/40 text-red-300" :
-                                    "bg-brand-500/20 border-brand-500/40 text-brand-300";
+              value === "income" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" :
+                value === "expense" ? "bg-red-500/20 border-red-500/40 text-red-300" :
+                  "bg-brand-500/20 border-brand-500/40 text-brand-300";
             return (
               <button
                 key={value}

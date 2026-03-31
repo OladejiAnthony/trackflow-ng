@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { Camera, User, Calendar, MapPin, Bell, ArrowRight, Loader2 } from "lucide-react";
 import { AppButton as Button } from "@/components/ui/AppButton";
 import { Alert } from "@/components/ui/Alert";
-import { createClient } from "@/lib/supabase/client";
 import { saveOnboardingProfile } from "../actions";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -55,32 +54,21 @@ export default function SetupProfilePage() {
 
     setUploading(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const fd = new FormData();
+      fd.append("file", file);
 
-      const ext  = file.name.split(".").pop() ?? "jpg";
-      const path = `${user.id}/avatar.${ext}`;
+      const res = await fetch("/api/storage/upload-avatar", {
+        method: "POST",
+        body: fd,
+      });
 
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, { upsert: true });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Upload failed");
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(path);
-
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(json.publicUrl);
     } catch (err) {
       setAvatarPreview(null);
-      const msg = err instanceof Error ? err.message : "Upload failed";
-      setError(
-        msg.toLowerCase().includes("bucket")
-          ? "Photo upload is not available right now. You can skip this and add a photo later in Settings."
-          : msg
-      );
+      setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
     }

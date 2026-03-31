@@ -62,50 +62,6 @@ function resolveDateRange(f: TransactionFilters): { start: string; end: string }
   }
 }
 
-// ─── Query builder ────────────────────────────────────────────────────────────
-
-function applyFilters(
-  query: ReturnType<ReturnType<typeof createClient>["from"]>,
-  userId: string,
-  filters: TransactionFilters
-) {
-  const q = (query as ReturnType<ReturnType<typeof createClient>["from"]> & {
-    eq: (...a: unknown[]) => unknown;
-  })
-    // We'll cast properly below — just use the fluent API
-    ;
-
-  // Start fresh with typed query
-  const supabase = createClient();
-  let q2 = supabase
-    .from("transactions")
-    .select("*")
-    .eq("user_id", userId);
-
-  if (filters.type !== "all") {
-    q2 = q2.eq("type", filters.type) as typeof q2;
-  }
-
-  if (filters.categories.length > 0) {
-    q2 = q2.in("category", filters.categories) as typeof q2;
-  }
-
-  if (filters.search.trim()) {
-    q2 = q2.ilike("description", `%${filters.search.trim()}%`) as typeof q2;
-  }
-
-  if (filters.paymentMethod) {
-    q2 = q2.contains("tags", [filters.paymentMethod]) as typeof q2;
-  }
-
-  const range = resolveDateRange(filters);
-  if (range) {
-    q2 = q2.gte("date", range.start).lte("date", range.end) as typeof q2;
-  }
-
-  return q2;
-}
-
 // ─── useTransactions ─────────────────────────────────────────────────────────
 
 export function useTransactions(filters: TransactionFilters = DEFAULT_FILTERS) {

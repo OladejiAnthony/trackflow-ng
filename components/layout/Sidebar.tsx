@@ -25,28 +25,28 @@ import { AppButton } from "@/components/ui/AppButton";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: "Dashboard",       href: "/dashboard",    premium: false },
-  { icon: ArrowLeftRight,  label: "Transactions",    href: "/transactions", premium: false },
-  { icon: BarChart3,       label: "Reports",         href: "/reports",      premium: false },
-  { icon: Target,          label: "Budgets",         href: "/budgets",      premium: false },
-  { icon: PiggyBank,       label: "Savings Goals",   href: "/savings",      premium: false },
-  { icon: TrendingUp,      label: "Investments",     href: "/investments",  premium: true  },
-  { icon: CalendarDays,    label: "Calendar",        href: "/calender",     premium: false },
-  { icon: Bot,             label: "AI Assistant",    href: "/ai-assistant", premium: false },
-  { icon: Trophy,          label: "Tasks & Rewards", href: "/tasks",        premium: false },
-  { icon: Settings,        label: "Settings",        href: "/settings",     premium: false },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", premium: false },
+  { icon: ArrowLeftRight, label: "Transactions", href: "/transactions", premium: false },
+  { icon: BarChart3, label: "Reports", href: "/reports", premium: false },
+  { icon: Target, label: "Budgets", href: "/budgets", premium: false },
+  { icon: PiggyBank, label: "Savings Goals", href: "/savings", premium: false },
+  { icon: TrendingUp, label: "Investments", href: "/investments", premium: true },
+  { icon: CalendarDays, label: "Calendar", href: "/calender", premium: false },
+  { icon: Bot, label: "AI Assistant", href: "/ai-assistant", premium: false },
+  { icon: Trophy, label: "Tasks & Rewards", href: "/tasks", premium: false },
+  { icon: Settings, label: "Settings", href: "/settings", premium: false },
 ] as const;
 
 const ACCOUNT_BADGE: Record<string, string> = {
   individual: "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300",
-  family:     "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-  business:   "bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300",
+  family: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  business: "bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300",
 };
 
 export default function Sidebar() {
-  const pathname                = usePathname();
-  const router                  = useRouter();
-  const { user, signOut }       = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, signOut } = useAuth();
   const { profile, setProfile } = useAppStore();
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function Sidebar() {
 
   const displayName = profile?.full_name ?? user?.email ?? "User";
   const accountType = profile?.account_type ?? "individual";
-  const avatarText  = initials(profile?.full_name ?? user?.email ?? "U");
+  const avatarText = initials(profile?.full_name ?? user?.email ?? "U");
 
   async function handleSignOut() {
     await signOut();
@@ -75,7 +75,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex items-center h-16 px-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
         <Image
-          src="/assets/full_logo_dark.png"
+          src="/assets/full_logo_light.png"
           alt="TrackFlow"
           width={140}
           height={36}

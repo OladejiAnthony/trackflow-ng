@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Bell, CheckCircle2, ArrowRight, Sun, Moon,
@@ -26,25 +26,35 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-const PUSH_BENEFITS = [
-  { icon: Sun,           text: "Morning money summary at 8:00 AM" },
-  { icon: Moon,          text: "Evening spending recap at 8:00 PM" },
-  { icon: Zap,           text: "Instant bank alert tracking" },
-  { icon: AlertTriangle, text: "Budget limit warnings before you overspend" },
-];
-
 const SMS_BENEFITS = [
   { icon: MessageSquare, text: "Auto-logs debit & credit alerts" },
   { icon: Shield,        text: "Processed entirely on your device" },
   { icon: Lock,          text: "Never uploaded or stored in the cloud" },
 ];
 
+function hourToLabel(h: number): string {
+  if (h === 12) return "12:00 PM";
+  if (h === 0)  return "12:00 AM";
+  return h < 12 ? `${h}:00 AM` : `${h - 12}:00 PM`;
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 type PermState = "idle" | "requesting" | "granted" | "denied" | "unsupported";
 
-export default function GrantPermissionsPage() {
-  const router = useRouter();
+function GrantPermissionsContent() {
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+
+  const morningHour = Number(searchParams.get("morning") ?? "8");
+  const eveningHour = Number(searchParams.get("evening") ?? "20");
+
+  const PUSH_BENEFITS = [
+    { icon: Sun,           text: `Morning money summary at ${hourToLabel(morningHour)}` },
+    { icon: Moon,          text: `Evening spending recap at ${hourToLabel(eveningHour)}` },
+    { icon: Zap,           text: "Instant bank alert tracking" },
+    { icon: AlertTriangle, text: "Budget limit warnings before you overspend" },
+  ];
 
   const [pushState, setPushState]     = useState<PermState>("idle");
   const [pushError, setPushError]     = useState<string | null>(null);
@@ -307,5 +317,13 @@ export default function GrantPermissionsPage() {
         </Button>
       )}
     </motion.div>
+  );
+}
+
+export default function GrantPermissionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <GrantPermissionsContent />
+    </Suspense>
   );
 }

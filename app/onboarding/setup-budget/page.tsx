@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, Info } from "lucide-react";
+import { ArrowRight, CheckCircle2, Info, Sun, Moon } from "lucide-react";
 import { AppButton as Button } from "@/components/ui/AppButton";
 import { Alert } from "@/components/ui/Alert";
 import { cn, TRANSACTION_CATEGORIES } from "@/lib/utils";
@@ -15,6 +15,20 @@ const EXPENSE_CATS = Object.entries(TRANSACTION_CATEGORIES)
   .map(([key, meta]) => ({ key, ...meta }));
 
 const MAX_CATS = 5;
+
+const MORNING_HOURS = [
+  { value: "5",  label: "5:00 AM"  }, { value: "6",  label: "6:00 AM"  },
+  { value: "7",  label: "7:00 AM"  }, { value: "8",  label: "8:00 AM"  },
+  { value: "9",  label: "9:00 AM"  }, { value: "10", label: "10:00 AM" },
+  { value: "11", label: "11:00 AM" },
+];
+
+const EVENING_HOURS = [
+  { value: "17", label: "5:00 PM"  }, { value: "18", label: "6:00 PM"  },
+  { value: "19", label: "7:00 PM"  }, { value: "20", label: "8:00 PM"  },
+  { value: "21", label: "9:00 PM"  }, { value: "22", label: "10:00 PM" },
+  { value: "23", label: "11:00 PM" },
+];
 
 // ─── Naira input helper ───────────────────────────────────────────────────────
 
@@ -30,6 +44,8 @@ export default function SetupBudgetPage() {
   const [income, setIncome]           = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
   const [selected, setSelected]       = useState<string[]>([]);
+  const [morningHour, setMorningHour] = useState("8");
+  const [eveningHour, setEveningHour] = useState("20");
   const [error, setError]             = useState<string | null>(null);
   const [isPending, startTransition]  = useTransition();
 
@@ -52,12 +68,14 @@ export default function SetupBudgetPage() {
       if (rawIncome) fd.set("monthly_income", rawIncome);
       if (rawBudget) fd.set("budget_limit", rawBudget);
       selected.forEach((cat) => fd.append("categories", cat));
+      fd.set("morning_hour", morningHour);
+      fd.set("evening_hour", eveningHour);
 
       const result = await saveOnboardingBudget(fd);
       if (result?.error) {
         setError(result.error);
       } else {
-        router.push("/onboarding/grant-permissions");
+        router.push(`/onboarding/grant-permissions?morning=${morningHour}&evening=${eveningHour}`);
       }
     });
   }
@@ -123,6 +141,40 @@ export default function SetupBudgetPage() {
               placeholder="0"
               className="input-field pl-8"
             />
+          </div>
+        </div>
+
+        {/* Notification times */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-slate-300 mb-1.5">
+              <Sun className="w-4 h-4 opacity-60" />
+              Morning summary
+            </label>
+            <select
+              value={morningHour}
+              onChange={(e) => setMorningHour(e.target.value)}
+              className="input-field"
+            >
+              {MORNING_HOURS.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-slate-300 mb-1.5">
+              <Moon className="w-4 h-4 opacity-60" />
+              Evening recap
+            </label>
+            <select
+              value={eveningHour}
+              onChange={(e) => setEveningHour(e.target.value)}
+              className="input-field"
+            >
+              {EVENING_HOURS.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -207,7 +259,7 @@ export default function SetupBudgetPage() {
           </Button>
           <button
             type="button"
-            onClick={() => router.push("/onboarding/grant-permissions")}
+            onClick={() => router.push(`/onboarding/grant-permissions?morning=${morningHour}&evening=${eveningHour}`)}
             className="text-sm text-slate-500 hover:text-slate-300 transition-colors py-1"
           >
             Skip for now

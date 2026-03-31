@@ -155,7 +155,7 @@ export const TRANSACTION_CATEGORIES = {
   insurance:     { label: "Insurance",       emoji: "🛡️",  color: "#6366f1", type: "expense" },
   subscriptions: { label: "Subscriptions",   emoji: "📱",  color: "#14b8a6", type: "expense" },
   family:        { label: "Family",          emoji: "👨‍👩‍👧‍👦", color: "#f43f5e", type: "expense" },
-  tithe:         { label: "Tithe/Offering",  emoji: "⛪",  color: "#a78bfa", type: "expense" },
+  giving:        { label: "Giving",           emoji: "🙏",  color: "#a78bfa", type: "expense" },
   data:          { label: "Data/Airtime",    emoji: "📶",  color: "#38bdf8", type: "expense" },
   other_expense: { label: "Other Expense",   emoji: "💸",  color: "#94a3b8", type: "expense" },
 } as const;
