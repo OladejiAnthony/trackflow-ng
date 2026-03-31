@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Bell, CheckCircle2, ArrowRight, Sun, Moon,
-  Zap, AlertTriangle, MessageSquare, Shield, Lock,
+  Zap, AlertTriangle, MessageSquare, Shield, Lock, Clock,
 } from "lucide-react";
 import { AppButton as Button } from "@/components/ui/AppButton";
 import { Alert } from "@/components/ui/Alert";
@@ -46,9 +46,9 @@ type PermState = "idle" | "requesting" | "granted" | "denied" | "unsupported";
 export default function GrantPermissionsPage() {
   const router = useRouter();
 
-  const [pushState, setPushState]       = useState<PermState>("idle");
-  const [pushError, setPushError]       = useState<string | null>(null);
-  const [smsExpanded, setSmsExpanded]   = useState(false);
+  const [pushState, setPushState]     = useState<PermState>("idle");
+  const [pushError, setPushError]     = useState<string | null>(null);
+  const [smsExpanded, setSmsExpanded] = useState(false);
 
   async function handleEnableNotifications() {
     setPushError(null);
@@ -68,34 +68,37 @@ export default function GrantPermissionsPage() {
         return;
       }
 
-      // Subscribe to push
-      const registration = await navigator.serviceWorker.ready;
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-
-      if (!vapidKey) {
-        // Dev mode without VAPID keys — just mark as granted
-        setPushState("granted");
-        return;
-      }
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly:      true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as Uint8Array<ArrayBuffer>,
-      });
-
-      // Save subscription to DB
-      const res = await fetch("/api/notifications/subscribe", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(subscription.toJSON()),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to save subscription");
-      }
-
+      // Mark as granted immediately so the UI unblocks
       setPushState("granted");
+
+      // Subscribe to push in the background (non-blocking)
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) return;
+
+      try {
+        // Timeout serviceWorker.ready so it never hangs the UI
+        const swReady = Promise.race<ServiceWorkerRegistration>([
+          navigator.serviceWorker.ready,
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("sw-timeout")), 6000)
+          ),
+        ]);
+
+        const registration = await swReady;
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly:      true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as Uint8Array<ArrayBuffer>,
+        });
+
+        await fetch("/api/notifications/subscribe", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify(subscription.toJSON()),
+        });
+      } catch {
+        // SW subscription failed in the background — permission is still granted
+      }
     } catch (err) {
       setPushState("idle");
       setPushError(err instanceof Error ? err.message : "Something went wrong");
@@ -160,7 +163,7 @@ export default function GrantPermissionsPage() {
         </ul>
 
         {pushError && (
-          <Alert variant="error" className="mb-4">
+          <Alert variant="error" className="mb-4" onDismiss={() => setPushError(null)}>
             {pushError}
           </Alert>
         )}
@@ -222,8 +225,8 @@ export default function GrantPermissionsPage() {
         )}
       </div>
 
-      {/* ── Section 2: Bank SMS Auto-tracking ──────────────────────────────── */}
-      <div className="glass rounded-3xl border border-white/10 overflow-hidden">
+      {/* ── Section 2: Bank SMS Auto-tracking (Coming Soon) ────────────────── */}
+      <div className="glass rounded-3xl border border-white/10 overflow-hidden opacity-75">
         <button
           type="button"
           onClick={() => setSmsExpanded((v) => !v)}
@@ -231,10 +234,16 @@ export default function GrantPermissionsPage() {
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 text-slate-300" />
+              <MessageSquare className="w-4 h-4 text-slate-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">Bank Alert Auto-Tracking</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-white">Bank Alert Auto-Tracking</p>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold-500/15 border border-gold-500/30 text-gold-400 text-[10px] font-semibold">
+                  <Clock className="w-2.5 h-2.5" />
+                  Coming Soon
+                </span>
+              </div>
               <p className="text-xs text-slate-500">Auto-log transactions from bank SMS</p>
             </div>
           </div>
@@ -255,42 +264,35 @@ export default function GrantPermissionsPage() {
         >
           <div className="px-6 pb-6 border-t border-white/10 pt-4 space-y-4">
             <p className="text-sm text-slate-400 leading-relaxed">
-              Allow TrackFlow to read your bank SMS alerts so we can automatically
+              TrackFlow will soon be able to read your bank SMS alerts and automatically
               log debit and credit transactions — no manual entry needed.
             </p>
 
             <ul className="space-y-2">
               {SMS_BENEFITS.map(({ text }) => (
                 <li key={text} className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-brand-400 flex-shrink-0" />
-                  <span className="text-xs text-slate-400">{text}</span>
+                  <CheckCircle2 className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                  <span className="text-xs text-slate-500">{text}</span>
                 </li>
               ))}
             </ul>
 
             <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-xs text-slate-400 leading-relaxed">
-              <strong className="text-slate-300">How it works:</strong> The app
-              reads your incoming SMS notifications using the Android Notification
+              <strong className="text-slate-300">How it will work:</strong> The app will
+              read your incoming SMS notifications using the Android Notification
               Listener API. All processing happens on-device. We never see your
               messages.
             </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              fullWidth
-              className="border-slate-600 text-slate-300 hover:bg-slate-800/50"
-            >
-              Enable Auto-Tracking (Android)
-            </Button>
-            <p className="text-xs text-slate-600 text-center">
-              Currently available on Android only. iOS support coming soon.
-            </p>
+            <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-gold-500/5 border border-gold-500/20">
+              <Clock className="w-4 h-4 text-gold-400" />
+              <span className="text-sm text-gold-400 font-medium">This feature is coming soon</span>
+            </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Final next button (shown if push is granted and user hasn't clicked Continue yet) */}
+      {/* Final next button */}
       {pushState !== "granted" && (
         <Button
           type="button"

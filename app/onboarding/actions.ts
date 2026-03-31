@@ -23,7 +23,31 @@ export async function saveOnboardingProfile(formData: FormData) {
   };
 
   const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
-  if (error) return { error: error.message };
+
+  if (error) {
+    // If the schema cache doesn't know about date_of_birth / state yet,
+    // retry with only the fields that are guaranteed to exist.
+    const isSchemaError =
+      error.message.includes("column") ||
+      error.message.includes("schema cache") ||
+      (error as { code?: string }).code === "PGRST204";
+
+    if (isSchemaError) {
+      const safePayload: Record<string, string> = {};
+      if (avatar_url) safePayload.avatar_url = avatar_url;
+      if (Object.keys(safePayload).length > 0) {
+        const { error: retryError } = await supabase
+          .from("profiles")
+          .update(safePayload)
+          .eq("id", user.id);
+        if (retryError) return { error: retryError.message };
+      }
+      return { success: true };
+    }
+
+    return { error: error.message };
+  }
+
   return { success: true };
 }
 

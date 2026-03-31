@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { AlertCircle, CheckCircle, Info, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Info, X, XCircle } from "lucide-react";
 
 type AlertVariant = "error" | "success" | "warning" | "info";
 
@@ -8,6 +8,7 @@ interface AlertProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  onDismiss?: () => void;
 }
 
 const config: Record<AlertVariant, { icon: React.ElementType; classes: string }> = {
@@ -29,16 +30,26 @@ const config: Record<AlertVariant, { icon: React.ElementType; classes: string }>
   },
 };
 
-export function Alert({ variant = "info", title, children, className }: AlertProps) {
+export function Alert({ variant = "info", title, children, className, onDismiss }: AlertProps) {
   const { icon: Icon, classes } = config[variant];
 
   return (
     <div className={cn("flex gap-3 px-4 py-3 rounded-xl border text-sm", classes, className)}>
       <Icon className="w-4 h-4 flex-shrink-0 mt-0.5" />
-      <div>
+      <div className="flex-1">
         {title && <p className="font-semibold mb-0.5">{title}</p>}
         <p className="leading-relaxed">{children}</p>
       </div>
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="flex-shrink-0 opacity-50 hover:opacity-100 transition-opacity -mt-0.5 -mr-1"
+          aria-label="Dismiss"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 }

@@ -74,7 +74,13 @@ export default function SetupProfilePage() {
 
       setAvatarUrl(publicUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setAvatarPreview(null);
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setError(
+        msg.toLowerCase().includes("bucket")
+          ? "Photo upload is not available right now. You can skip this and add a photo later in Settings."
+          : msg
+      );
     } finally {
       setUploading(false);
     }
@@ -117,7 +123,7 @@ export default function SetupProfilePage() {
       </div>
 
       <div className="glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-card-xl space-y-6 auth-panel">
-        {error && <Alert variant="error">{error}</Alert>}
+        {error && <Alert variant="error" onDismiss={() => setError(null)}>{error}</Alert>}
 
         {/* Avatar */}
         <div className="flex flex-col items-center gap-3">
