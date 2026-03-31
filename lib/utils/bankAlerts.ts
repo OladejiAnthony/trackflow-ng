@@ -276,10 +276,19 @@ const parseGeneral: BankParser = (sms) => {
   const amount = parseAmount(amountMatch[1]);
   if (!amount || amount <= 0) return null;
 
+  const bankName =
+    /Stanbic/i.test(sms)  ? "Stanbic IBTC" :
+    /Sterling/i.test(sms) ? "Sterling Bank" :
+    /Polaris/i.test(sms)  ? "Polaris Bank"  :
+    /FCMB/i.test(sms)     ? "FCMB"          :
+    /Wema/i.test(sms)     ? "Wema Bank"     :
+    /Jaiz/i.test(sms)     ? "Jaiz Bank"     :
+                            "Unknown Bank";
+
   return {
     type:        isCreditKeyword ? "credit" : "debit",
     amount,
-    bank:        "Unknown Bank",
+    bank:        bankName,
     description: sms.replace(/\n/g, " ").substring(0, 100).trim(),
     date:        new Date(),
     balance:     extractBalance(sms),

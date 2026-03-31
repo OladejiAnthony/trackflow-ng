@@ -24,6 +24,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useAppStore } from "@/store/useAppStore";
 import { AppButton } from "@/components/ui/AppButton";
 import { TRANSACTION_CATEGORIES, cn } from "@/lib/utils";
+import type { Transaction } from "@/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,36 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+// ─── Edit mode helpers ────────────────────────────────────────────────────────
+
+const VALID_PAYMENT_METHODS = ["cash", "card", "pos", "ussd", "transfer"] as const;
+type PaymentMethodValue = typeof VALID_PAYMENT_METHODS[number];
+
+function mapTransactionToForm(tx: Transaction): FormValues {
+  const tags        = tx.tags ?? [];
+  const isTransfer  = tags.includes("transfer") && tx.type === "expense";
+  const paymentMethod = tags.find(
+    (t) => VALID_PAYMENT_METHODS.includes(t as PaymentMethodValue) && !(isTransfer && t === "transfer")
+  ) as FormValues["payment_method"];
+
+  const amountStr = Number(tx.amount)
+    .toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+  return {
+    type:               isTransfer ? "transfer" : (tx.type as "income" | "expense"),
+    amount:             amountStr,
+    category:           tx.category,
+    description:        tx.description,
+    date:               tx.date,
+    payment_method:     paymentMethod,
+    note:               tx.note ?? "",
+    is_recurring:       tx.is_recurring ?? false,
+    recurring_interval: (tx.recurring_interval as FormValues["recurring_interval"]) ?? undefined,
+    add_to_family:      tags.includes("family"),
+    add_to_business:    tags.includes("business"),
+  };
+}
 
 // ─── Category Dropdown ────────────────────────────────────────────────────────
 
@@ -229,15 +260,19 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 // ─── Form Content ─────────────────────────────────────────────────────────────
 
 function TransactionFormContent({ onClose }: { onClose: () => void }) {
-  const { user }      = useAuth();
-  const queryClient   = useQueryClient();
-  const initialType   = useAppStore((s) => s.initialTransactionType);
-  const fileRef       = useRef<HTMLInputElement>(null);
+  const { user }            = useAuth();
+  const queryClient         = useQueryClient();
+  const initialType         = useAppStore((s) => s.initialTransactionType);
+  const editTransaction     = useAppStore((s) => s.editTransaction);
+  const setEditTransaction  = useAppStore((s) => s.setEditTransaction);
+  const fileRef             = useRef<HTMLInputElement>(null);
+  const prevTypeRef         = useRef<string | null>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [submitting, setSubmitting]   = useState(false);
 
   const todayStr    = new Date().toISOString().split("T")[0];
   const accountType = (user?.user_metadata?.account_type as string) ?? "individual";
+  const isEditing   = !!editTransaction;
 
   const {
     register,
@@ -268,13 +303,47 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
   const watchAmount      = watch("amount");
   const watchIsRecurring = watch("is_recurring");
 
+  // Reset form when editTransaction changes (open for edit) or clears (open for new)
   useEffect(() => {
-    setValue("category", "");
+    if (editTransaction) {
+      const values = mapTransactionToForm(editTransaction);
+      prevTypeRef.current = values.type;
+      reset(values);
+      setReceiptFile(null);
+    } else {
+      prevTypeRef.current = initialType ?? "expense";
+      reset({
+        type:               initialType ?? "expense",
+        amount:             "",
+        category:           "",
+        description:        "",
+        date:               todayStr,
+        payment_method:     undefined,
+        note:               "",
+        is_recurring:       false,
+        recurring_interval: undefined,
+        add_to_family:      false,
+        add_to_business:    false,
+      });
+      setReceiptFile(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editTransaction?.id]);
+
+  // Clear category only when user actively changes the type (not on reset)
+  useEffect(() => {
+    if (prevTypeRef.current !== null && prevTypeRef.current !== watchType) {
+      setValue("category", "");
+    }
+    prevTypeRef.current = watchType;
   }, [watchType, setValue]);
 
+  // Sync type when initialType changes (new transaction mode only)
   useEffect(() => {
-    setValue("type", initialType ?? "expense");
-  }, [initialType, setValue]);
+    if (!editTransaction) {
+      setValue("type", initialType ?? "expense");
+    }
+  }, [initialType, setValue, editTransaction]);
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw     = e.target.value.replace(/[^0-9.]/g, "");
@@ -282,6 +351,11 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
     const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     const decimal = parts.length > 1 ? "." + parts[1].slice(0, 2) : "";
     setValue("amount", integer + decimal);
+  }
+
+  function handleClose() {
+    setEditTransaction(null);
+    onClose();
   }
 
   async function onSubmit(data: FormValues) {
@@ -298,71 +372,105 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
       if (data.add_to_family) tags.push("family");
       if (data.add_to_business) tags.push("business");
 
-      let receipt_url: string | null = null;
-      if (receiptFile) {
-        const ext  = receiptFile.name.split(".").pop() ?? "jpg";
-        const path = `${user.id}/${Date.now()}.${ext}`;
-        const { data: up, error: upErr } = await supabase.storage
-          .from("receipts")
-          .upload(path, receiptFile);
-        if (!upErr && up) {
-          const { data: { publicUrl } } = supabase.storage
+      if (isEditing) {
+        // ── Edit existing transaction ──────────────────────────────────────
+        const { error: txErr } = await supabase
+          .from("transactions")
+          .update({
+            type:               dbType,
+            amount,
+            category:           data.category,
+            description:        data.description,
+            date:               data.date,
+            note:               data.note?.trim() || null,
+            tags:               tags.length > 0 ? tags : null,
+            is_recurring:       data.is_recurring,
+            recurring_interval: data.is_recurring ? (data.recurring_interval ?? null) : null,
+            updated_at:         new Date().toISOString(),
+          })
+          .eq("id", editTransaction!.id)
+          .eq("user_id", user.id);
+
+        if (txErr) throw txErr;
+
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["transaction-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard-transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["budgets"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+
+        const meta = TRANSACTION_CATEGORIES[data.category as keyof typeof TRANSACTION_CATEGORIES];
+        toast.success("Transaction updated", {
+          description: `${meta?.emoji ?? ""} ${meta?.label ?? data.category} · ₦${amount.toLocaleString("en-NG")}`,
+        });
+      } else {
+        // ── Add new transaction ────────────────────────────────────────────
+        let receipt_url: string | null = null;
+        if (receiptFile) {
+          const ext  = receiptFile.name.split(".").pop() ?? "jpg";
+          const path = `${user.id}/${Date.now()}.${ext}`;
+          const { data: up, error: upErr } = await supabase.storage
             .from("receipts")
-            .getPublicUrl(up.path);
-          receipt_url = publicUrl;
+            .upload(path, receiptFile);
+          if (!upErr && up) {
+            const { data: { publicUrl } } = supabase.storage
+              .from("receipts")
+              .getPublicUrl(up.path);
+            receipt_url = publicUrl;
+          }
         }
-      }
 
-      const { error: txErr } = await supabase.from("transactions").insert({
-        user_id:            user.id,
-        type:               dbType,
-        amount,
-        category:           data.category,
-        description:        data.description,
-        date:               data.date,
-        note:               data.note?.trim() || null,
-        tags:               tags.length > 0 ? tags : null,
-        receipt_url,
-        is_recurring:       data.is_recurring,
-        recurring_interval: data.is_recurring ? (data.recurring_interval ?? null) : null,
-      });
+        const { error: txErr } = await supabase.from("transactions").insert({
+          user_id:            user.id,
+          type:               dbType,
+          amount,
+          category:           data.category,
+          description:        data.description,
+          date:               data.date,
+          note:               data.note?.trim() || null,
+          tags:               tags.length > 0 ? tags : null,
+          receipt_url,
+          is_recurring:       data.is_recurring,
+          recurring_interval: data.is_recurring ? (data.recurring_interval ?? null) : null,
+        });
 
-      if (txErr) throw txErr;
+        if (txErr) throw txErr;
 
-      // Update matching active budget's spent
-      if (dbType === "expense") {
-        const { data: budgets } = await supabase
-          .from("budgets")
-          .select("id, spent")
-          .eq("user_id", user.id)
-          .eq("category", data.category)
-          .eq("is_active", true)
-          .lte("start_date", data.date)
-          .gte("end_date", data.date)
-          .limit(1);
-
-        if (budgets && budgets.length > 0) {
-          await supabase
+        // Update matching active budget's spent
+        if (dbType === "expense") {
+          const { data: budgets } = await supabase
             .from("budgets")
-            .update({ spent: Number(budgets[0].spent) + amount })
-            .eq("id", budgets[0].id);
+            .select("id, spent")
+            .eq("user_id", user.id)
+            .eq("category", data.category)
+            .eq("is_active", true)
+            .lte("start_date", data.date)
+            .gte("end_date", data.date)
+            .limit(1);
+
+          if (budgets && budgets.length > 0) {
+            await supabase
+              .from("budgets")
+              .update({ spent: Number(budgets[0].spent) + amount })
+              .eq("id", budgets[0].id);
+          }
         }
+
+        queryClient.invalidateQueries({ queryKey: ["dashboard-transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["budgets"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+
+        const meta = TRANSACTION_CATEGORIES[data.category as keyof typeof TRANSACTION_CATEGORIES];
+        toast.success(
+          `${data.type === "income" ? "Income" : data.type === "transfer" ? "Transfer" : "Expense"} saved`,
+          { description: `${meta?.emoji ?? ""} ${meta?.label ?? data.category} · ₦${amount.toLocaleString("en-NG")}` }
+        );
       }
-
-      queryClient.invalidateQueries({ queryKey: ["dashboard-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["budgets"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
-
-      const meta = TRANSACTION_CATEGORIES[data.category as keyof typeof TRANSACTION_CATEGORIES];
-      toast.success(
-        `${data.type === "income" ? "Income" : data.type === "transfer" ? "Transfer" : "Expense"} saved`,
-        { description: `${meta?.emoji ?? ""} ${meta?.label ?? data.category} · ₦${amount.toLocaleString("en-NG")}` }
-      );
 
       reset();
       setReceiptFile(null);
-      onClose();
+      handleClose();
     } catch (err) {
       toast.error("Failed to save", {
         description: err instanceof Error ? err.message : "Something went wrong",
@@ -508,56 +616,58 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
         />
       </div>
 
-      {/* Receipt Upload */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1.5">
-          Receipt <span className="text-slate-500 text-xs font-normal">(optional)</span>
-        </label>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)}
-        />
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className={cn(
-            "w-full flex items-center gap-2 px-4 py-3 rounded-xl border text-sm transition-all",
-            receiptFile
-              ? "bg-brand-500/10 border-brand-500/30 text-brand-300 justify-between"
-              : "bg-white/5 border-white/10 border-dashed text-slate-500 hover:border-white/20 hover:text-slate-300 justify-center"
-          )}
-        >
-          {receiptFile ? (
-            <>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4" />
-                <span className="truncate max-w-[200px] text-sm">{receiptFile.name}</span>
-              </div>
-              <span
-                role="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setReceiptFile(null);
-                  if (fileRef.current) fileRef.current.value = "";
-                }}
-                className="text-slate-400 hover:text-white p-1"
-              >
-                <X className="w-3.5 h-3.5" />
-              </span>
-            </>
-          ) : (
-            <>
-              <Camera className="w-4 h-4" />
-              <Upload className="w-4 h-4" />
-              Camera or upload photo
-            </>
-          )}
-        </button>
-      </div>
+      {/* Receipt Upload (add mode only) */}
+      {!isEditing && (
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            Receipt <span className="text-slate-500 text-xs font-normal">(optional)</span>
+          </label>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className={cn(
+              "w-full flex items-center gap-2 px-4 py-3 rounded-xl border text-sm transition-all",
+              receiptFile
+                ? "bg-brand-500/10 border-brand-500/30 text-brand-300 justify-between"
+                : "bg-white/5 border-white/10 border-dashed text-slate-500 hover:border-white/20 hover:text-slate-300 justify-center"
+            )}
+          >
+            {receiptFile ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  <span className="truncate max-w-[200px] text-sm">{receiptFile.name}</span>
+                </div>
+                <span
+                  role="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setReceiptFile(null);
+                    if (fileRef.current) fileRef.current.value = "";
+                  }}
+                  className="text-slate-400 hover:text-white p-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </span>
+              </>
+            ) : (
+              <>
+                <Camera className="w-4 h-4" />
+                <Upload className="w-4 h-4" />
+                Camera or upload photo
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Notes */}
       <div>
@@ -668,7 +778,7 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
 
       {/* Submit */}
       <AppButton type="submit" variant="gold" size="lg" fullWidth loading={submitting} className="mt-1">
-        Save Transaction
+        {isEditing ? "Save Changes" : "Save Transaction"}
       </AppButton>
     </form>
   );
@@ -677,15 +787,23 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
 // ─── Sheet Wrapper ────────────────────────────────────────────────────────────
 
 export function TransactionForm() {
-  const { addTransactionOpen, setAddTransactionOpen } = useAppStore();
+  const {
+    addTransactionOpen,
+    setAddTransactionOpen,
+    editTransaction,
+    setEditTransaction,
+  } = useAppStore();
+
+  const isOpen = addTransactionOpen || !!editTransaction;
 
   function handleClose() {
     setAddTransactionOpen(false);
+    setEditTransaction(null);
   }
 
   return (
     <AnimatePresence>
-      {addTransactionOpen && (
+      {isOpen && (
         <>
           {/* Backdrop */}
           <motion.div
@@ -710,7 +828,9 @@ export function TransactionForm() {
             {/* Sticky header */}
             <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-[#080F1E]/95 backdrop-blur-md border-b border-white/5">
               <div>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">New</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">
+                  {editTransaction ? "Edit" : "New"}
+                </p>
                 <p className="text-base font-bold text-white leading-tight">Transaction</p>
               </div>
               <button

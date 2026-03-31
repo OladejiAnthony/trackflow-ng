@@ -253,6 +253,34 @@ export function useUpdateTransaction() {
   });
 }
 
+// ─── useAddTransaction ───────────────────────────────────────────────────────
+
+export function useAddTransaction() {
+  const { user } = useAuth();
+  const qc       = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Omit<TransactionInsert, "user_id">) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("transactions")
+        .insert({ ...data, user_id: user!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["transaction-stats"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-transactions"] });
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      toast.success("Transaction added");
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to add", { description: err.message });
+    },
+  });
+}
+
 // ─── useExportTransactions ────────────────────────────────────────────────────
 // Fetches ALL matching transactions (no pagination) for CSV export
 

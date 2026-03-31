@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Profile } from "@/types";
+import type { Profile, Transaction } from "@/types";
 
 interface AppState {
   // User
@@ -21,6 +21,11 @@ interface AppState {
   setAddTransactionOpen: (open: boolean) => void;
   initialTransactionType: "income" | "expense";
   setInitialTransactionType: (type: "income" | "expense") => void;
+
+  // Edit transaction
+  editTransaction: Transaction | null;
+  setEditTransaction: (t: Transaction | null) => void;
+  openEditTransaction: (t: Transaction) => void;
 
   // Active month filter (ISO string of first day of month)
   activeMonth: string;
@@ -50,6 +55,10 @@ export const useAppStore = create<AppState>()(
       setAddTransactionOpen: (open) => set({ addTransactionOpen: open }),
       initialTransactionType: "expense",
       setInitialTransactionType: (type) => set({ initialTransactionType: type }),
+
+      editTransaction: null,
+      setEditTransaction: (t) => set({ editTransaction: t }),
+      openEditTransaction: (t) => set({ editTransaction: t, addTransactionOpen: true }),
 
       activeMonth: getFirstDayOfCurrentMonth(),
       setActiveMonth: (month) => set({ activeMonth: month }),
