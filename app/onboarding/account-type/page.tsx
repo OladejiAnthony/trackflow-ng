@@ -21,7 +21,7 @@ const ACCOUNT_TYPES = [
     value: "family",
     emoji: "👨‍👩‍👧‍👦",
     label: "Family",
-    description: "Manage household budgets and track spending together",
+    description: "Manage/Join household budgets and track spending together",
   },
   {
     value: "business",
@@ -36,7 +36,7 @@ type AccountTypeValue = typeof ACCOUNT_TYPES[number]["value"];
 export default function AccountTypePage() {
   const router = useRouter();
   const [selected, setSelected] = useState<AccountTypeValue>("individual");
-  const [error, setError]       = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Pre-select the account type already stored on the profile (set by the

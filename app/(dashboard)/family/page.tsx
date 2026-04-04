@@ -11,7 +11,7 @@ import {
 import {
   Users, Plus, Copy, Trash2, X, Home, LogIn,
   TrendingUp, TrendingDown, Wallet, Check,
-  PiggyBank, AlertTriangle,
+  PiggyBank, AlertTriangle, Mail,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1008,6 +1008,11 @@ function InvitesTab({ familyId, invites, isAdmin, isLoading }: {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinLoading, setJoinLoading] = useState(false);
 
+  const [inviteEmail, setInviteEmail]           = useState("");
+  const [inviteEmailLoading, setInviteEmailLoading] = useState(false);
+  const [inviteEmailError, setInviteEmailError] = useState<string | null>(null);
+  const [inviteEmailSuccess, setInviteEmailSuccess] = useState<string | null>(null);
+
   const generateInvite = useGenerateInvite();
   const { user }       = useAuth();
   const queryClient    = useQueryClient();
@@ -1050,8 +1055,75 @@ function InvitesTab({ familyId, invites, isAdmin, isLoading }: {
     }
   }
 
+  async function handleSendEmailInvite() {
+    setInviteEmailLoading(true);
+    setInviteEmailError(null);
+    setInviteEmailSuccess(null);
+    try {
+      const res = await fetch("/api/family/invite-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, familyId }),
+      });
+      const json = await res.json();
+      if (!res.ok && res.status !== 207) {
+        setInviteEmailError(json.error ?? "Failed to send invite");
+        return;
+      }
+      const code = json.invite?.invite_code ?? "";
+      if (json.emailError) {
+        setInviteEmailSuccess(`Email failed — share this code manually: ${code}`);
+      } else {
+        setInviteEmailSuccess(`Invite sent to ${inviteEmail}! Code: ${code}`);
+      }
+      setInviteEmail("");
+      queryClient.invalidateQueries({ queryKey: ["family-invites", familyId] });
+    } catch {
+      setInviteEmailError("Network error. Please try again.");
+    } finally {
+      setInviteEmailLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {/* Invite by Email (admin only) */}
+      {isAdmin && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+            <Mail className="w-4 h-4 text-brand-500" />
+            Invite by Email
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Send a registration link + invite code to someone who isn&apos;t on TrackFlow yet.
+          </p>
+          {inviteEmailError && (
+            <Alert variant="error" onDismiss={() => setInviteEmailError(null)}>{inviteEmailError}</Alert>
+          )}
+          {inviteEmailSuccess && (
+            <Alert variant="success" onDismiss={() => setInviteEmailSuccess(null)}>{inviteEmailSuccess}</Alert>
+          )}
+          <div className="flex gap-2">
+            <Input
+              type="email"
+              placeholder="friend@example.com"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+              className="flex-1"
+            />
+            <AppButton
+              size="md"
+              variant="brand"
+              loading={inviteEmailLoading}
+              disabled={!/\S+@\S+\.\S+/.test(inviteEmail)}
+              onClick={handleSendEmailInvite}
+            >
+              Send Invite
+            </AppButton>
+          </div>
+        </div>
+      )}
+
       {/* Generate Invite (admin only) */}
       {isAdmin && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card p-5 space-y-4">
@@ -1087,6 +1159,11 @@ function InvitesTab({ familyId, invites, isAdmin, isLoading }: {
                       {invite.invite_code}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">{expiryLabel(invite.expires_at)}</p>
+                    {invite.email && (
+                      <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+                        <Mail className="w-3 h-3" /> {invite.email}
+                      </p>
+                    )}
                   </div>
                   <button
                     onClick={() => handleCopy(invite.invite_code, invite.id)}
