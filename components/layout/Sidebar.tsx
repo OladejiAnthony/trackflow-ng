@@ -17,6 +17,8 @@ import {
   Settings,
   LogOut,
   Zap,
+  Users2,
+  Briefcase,
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -25,17 +27,19 @@ import { AppButton } from "@/components/ui/AppButton";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", premium: false },
-  { icon: ArrowLeftRight, label: "Transactions", href: "/transactions", premium: false },
-  { icon: BarChart3, label: "Reports", href: "/reports", premium: false },
-  { icon: Target, label: "Budgets", href: "/budgets", premium: false },
-  { icon: PiggyBank, label: "Savings Goals", href: "/savings", premium: false },
-  { icon: TrendingUp, label: "Investments", href: "/investments", premium: true },
-  { icon: CalendarDays, label: "Calendar", href: "/calender", premium: false },
-  { icon: Bot, label: "AI Assistant", href: "/ai-assistant", premium: false },
-  { icon: Trophy, label: "Tasks & Rewards", href: "/tasks", premium: false },
-  { icon: Settings, label: "Settings", href: "/settings", premium: false },
-] as const;
+  { icon: LayoutDashboard, label: "Dashboard",     href: "/dashboard",  premium: false, accountType: null },
+  { icon: ArrowLeftRight,  label: "Transactions",  href: "/transactions", premium: false, accountType: null },
+  { icon: BarChart3,       label: "Reports",       href: "/reports",    premium: false, accountType: null },
+  { icon: Target,          label: "Budgets",       href: "/budgets",    premium: false, accountType: null },
+  { icon: PiggyBank,       label: "Savings Goals", href: "/savings",    premium: false, accountType: null },
+  { icon: Users2,          label: "Family",        href: "/family",     premium: false, accountType: "family"   },
+  { icon: Briefcase,       label: "Business",      href: "/business",   premium: false, accountType: "business" },
+  { icon: TrendingUp,      label: "Investments",   href: "/investments", premium: true, accountType: null },
+  { icon: CalendarDays,    label: "Calendar",      href: "/calendar",   premium: false, accountType: null },
+  { icon: Bot,             label: "AI Assistant",  href: "/ai-assistant", premium: false, accountType: null },
+  { icon: Trophy,          label: "Tasks & Rewards", href: "/tasks",    premium: false, accountType: null },
+  { icon: Settings,        label: "Settings",      href: "/settings",   premium: false, accountType: null },
+];
 
 const ACCOUNT_BADGE: Record<string, string> = {
   individual: "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300",
@@ -45,9 +49,9 @@ const ACCOUNT_BADGE: Record<string, string> = {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, signOut } = useAuth();
-  const { profile, setProfile } = useAppStore();
+  const router   = useRouter();
+  const { user } = useAuth();
+  const { profile, setProfile, setLogoutModalOpen } = useAppStore();
 
   useEffect(() => {
     if (!user || profile) return;
@@ -64,9 +68,8 @@ export default function Sidebar() {
   const accountType = profile?.account_type ?? "individual";
   const avatarText = initials(profile?.full_name ?? user?.email ?? "U");
 
-  async function handleSignOut() {
-    await signOut();
-    router.push("/login");
+  function handleSignOut() {
+    setLogoutModalOpen(true);
   }
 
   return (
@@ -114,7 +117,8 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto no-scrollbar py-3 px-2 space-y-0.5">
-        {NAV_ITEMS.map(({ icon: Icon, label, href, premium }) => {
+        {NAV_ITEMS.map(({ icon: Icon, label, href, premium, accountType: requiredType }) => {
+          if (requiredType && requiredType !== profile?.account_type) return null;
           const isActive =
             href === "/dashboard"
               ? pathname === href

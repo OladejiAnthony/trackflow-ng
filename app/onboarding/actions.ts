@@ -3,6 +3,27 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { TRANSACTION_CATEGORIES } from "@/lib/utils";
+// ─── Step 1: Save account type ───────────────────────────────────────────────
+
+export async function saveAccountType(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const account_type = formData.get("account_type") as string;
+  if (!["individual", "family", "business"].includes(account_type)) {
+    return { error: "Invalid account type" };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ account_type: account_type as "individual" | "family" | "business" })
+    .eq("id", user.id);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
 // ─── Step 2: Save profile details ────────────────────────────────────────────
 
 export async function saveOnboardingProfile(formData: FormData) {

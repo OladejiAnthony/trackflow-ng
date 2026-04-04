@@ -30,6 +30,10 @@ interface AppState {
   // Active month filter (ISO string of first day of month)
   activeMonth: string;
   setActiveMonth: (month: string) => void;
+
+  // Logout confirmation modal
+  logoutModalOpen: boolean;
+  setLogoutModalOpen: (open: boolean) => void;
 }
 
 function getFirstDayOfCurrentMonth(): string {
@@ -62,6 +66,9 @@ export const useAppStore = create<AppState>()(
 
       activeMonth: getFirstDayOfCurrentMonth(),
       setActiveMonth: (month) => set({ activeMonth: month }),
+
+      logoutModalOpen: false,
+      setLogoutModalOpen: (open) => set({ logoutModalOpen: open }),
     }),
     {
       name: "trackflow-app",

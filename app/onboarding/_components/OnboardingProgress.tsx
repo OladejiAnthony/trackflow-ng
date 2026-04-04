@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 
 const STEPS = [
+  { path: "/onboarding/account-type",      label: "Account Type"  },
   { path: "/onboarding/welcome",           label: "Welcome"       },
   { path: "/onboarding/setup-profile",     label: "Profile"       },
   { path: "/onboarding/setup-budget",      label: "Budget"        },

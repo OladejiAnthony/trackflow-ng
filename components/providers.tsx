@@ -28,6 +28,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           expand={false}
           closeButton
           toastOptions={{
+            duration: 5000,
             style: {
               fontFamily: "var(--font-dm-sans)",
               fontSize: "14px",

@@ -1,6 +1,7 @@
 import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
 import { TransactionForm } from "@/components/transactions/TransactionForm";
+import { LogoutConfirmModal } from "@/components/ui/LogoutConfirmModal";
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
       </main>
       <BottomNav />
       <TransactionForm />
+      <LogoutConfirmModal />
     </div>
   );
 }

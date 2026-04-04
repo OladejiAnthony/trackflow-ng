@@ -80,6 +80,7 @@ export interface Database {
           is_recurring: boolean;
           recurring_interval: "daily" | "weekly" | "monthly" | "yearly" | null;
           budget_id: string | null;
+          context: "personal" | "family" | "business";
           created_at: string;
           updated_at: string;
         };
@@ -97,6 +98,7 @@ export interface Database {
           is_recurring?: boolean;
           recurring_interval?: "daily" | "weekly" | "monthly" | "yearly" | null;
           budget_id?: string | null;
+          context?: "personal" | "family" | "business";
           created_at?: string;
           updated_at?: string;
         };
@@ -112,6 +114,7 @@ export interface Database {
           is_recurring?: boolean;
           recurring_interval?: "daily" | "weekly" | "monthly" | "yearly" | null;
           budget_id?: string | null;
+          context?: "personal" | "family" | "business";
           updated_at?: string;
         };
         Relationships: [];
@@ -268,6 +271,110 @@ export interface Database {
         };
         Relationships: [];
       };
+      family_groups: {
+        Row: {
+          id: string;
+          name: string;
+          created_by: string;
+          invite_code: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_by: string;
+          invite_code: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          invite_code?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      family_members: {
+        Row: {
+          id: string;
+          family_id: string;
+          user_id: string;
+          role: "admin" | "member";
+          joined_at: string;
+        };
+        Insert: {
+          id?: string;
+          family_id: string;
+          user_id: string;
+          role?: "admin" | "member";
+          joined_at?: string;
+        };
+        Update: {
+          role?: "admin" | "member";
+        };
+        Relationships: [];
+      };
+      family_invites: {
+        Row: {
+          id: string;
+          family_id: string;
+          email: string | null;
+          invite_code: string;
+          expires_at: string;
+          accepted: boolean;
+          accepted_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          family_id: string;
+          email?: string | null;
+          invite_code: string;
+          expires_at: string;
+          accepted?: boolean;
+          accepted_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          accepted?: boolean;
+          accepted_by?: string | null;
+        };
+        Relationships: [];
+      };
+      inventory_items: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          quantity: number;
+          cost_price: number;
+          selling_price: number;
+          low_stock_threshold: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          quantity?: number;
+          cost_price?: number;
+          selling_price?: number;
+          low_stock_threshold?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          quantity?: number;
+          cost_price?: number;
+          selling_price?: number;
+          low_stock_threshold?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -296,3 +403,13 @@ export type Subscription  = Database["public"]["Tables"]["subscriptions"]["Row"]
 export type TransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
 export type BudgetInsert      = Database["public"]["Tables"]["budgets"]["Insert"];
 export type GoalInsert        = Database["public"]["Tables"]["goals"]["Insert"];
+
+export type FamilyGroup       = Database["public"]["Tables"]["family_groups"]["Row"];
+export type FamilyMember      = Database["public"]["Tables"]["family_members"]["Row"];
+export type FamilyInvite      = Database["public"]["Tables"]["family_invites"]["Row"];
+export type InventoryItem     = Database["public"]["Tables"]["inventory_items"]["Row"];
+
+export type FamilyGroupInsert   = Database["public"]["Tables"]["family_groups"]["Insert"];
+export type FamilyMemberInsert  = Database["public"]["Tables"]["family_members"]["Insert"];
+export type FamilyInviteInsert  = Database["public"]["Tables"]["family_invites"]["Insert"];
+export type InventoryItemInsert = Database["public"]["Tables"]["inventory_items"]["Insert"];

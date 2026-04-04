@@ -7,13 +7,18 @@ import { createClient } from "@/lib/supabase/client";
 import { cn, clampPercent, formatNaira, percentage } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
 
-export default function BudgetProgress() {
+type BudgetRow = { id: string; name: string; amount: number; spent: number; [key: string]: unknown };
+
+export default function BudgetProgress({ initialData }: { initialData?: BudgetRow[] }) {
   const { user } = useAuth();
 
   const { data: budgets = [], isLoading } = useQuery({
-    queryKey: ["dashboard-budgets", user?.id],
-    enabled:  !!user?.id,
-    staleTime: 60_000,
+    queryKey:             ["dashboard-budgets", user?.id],
+    enabled:              !!user?.id,
+    staleTime:            60_000,
+    refetchInterval:      30_000,
+    initialData:          initialData,
+    initialDataUpdatedAt: initialData ? Date.now() : undefined,
     queryFn: async () => {
       const supabase = createClient();
       const { data } = await supabase

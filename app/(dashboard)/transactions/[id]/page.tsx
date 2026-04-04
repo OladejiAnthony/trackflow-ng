@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -11,10 +11,8 @@ import {
 import { format, parseISO } from "date-fns";
 import { AppButton } from "@/components/ui/AppButton";
 import { useAppStore } from "@/store/useAppStore";
-import { useDeleteTransaction } from "@/lib/hooks/useTransactions";
-import { createClient } from "@/lib/supabase/client";
+import { useDeleteTransaction, useTransactionById } from "@/lib/hooks/useTransactions";
 import { getCategoryMeta, formatNaira, cn } from "@/lib/utils";
-import type { Transaction } from "@/types";
 
 const PAYMENT_LABELS: Record<string, { label: string; emoji: string }> = {
   cash:     { label: "Cash",     emoji: "💵" },
@@ -31,30 +29,9 @@ export default function TransactionDetailPage() {
 
   const openEditTransaction = useAppStore((s) => s.openEditTransaction);
   const { mutate: deleteTransaction, isPending: isDeleting } = useDeleteTransaction();
+  const { data: transaction, isLoading, isError } = useTransactionById(id);
 
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
-  const [loading, setLoading]         = useState(true);
-  const [notFound, setNotFound]       = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-
-  useEffect(() => {
-    if (!id) return;
-    async function load() {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error || !data) {
-        setNotFound(true);
-      } else {
-        setTransaction(data as Transaction);
-      }
-      setLoading(false);
-    }
-    load();
-  }, [id]);
 
   function handleEdit() {
     if (transaction) openEditTransaction(transaction);
@@ -67,7 +44,7 @@ export default function TransactionDetailPage() {
     });
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
@@ -75,7 +52,7 @@ export default function TransactionDetailPage() {
     );
   }
 
-  if (notFound || !transaction) {
+  if (isError || !transaction) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <p className="text-slate-400">Transaction not found.</p>

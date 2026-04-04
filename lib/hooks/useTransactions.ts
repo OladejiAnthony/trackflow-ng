@@ -9,7 +9,7 @@ import {
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/hooks/useAuth";
-import type { Transaction, TransactionInsert } from "@/types";
+import type { Transaction, TransactionInsert, TransactionContext } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +21,7 @@ export interface TransactionFilters {
   dateRange:     "today" | "week" | "month" | "all" | "custom";
   startDate:     string;
   endDate:       string;
+  context?:      TransactionContext;
 }
 
 export const DEFAULT_FILTERS: TransactionFilters = {
@@ -71,6 +72,7 @@ export function useTransactions(filters: TransactionFilters = DEFAULT_FILTERS) {
   return useInfiniteQuery({
     queryKey:        ["transactions", uid, filters],
     enabled:         !!uid,
+    refetchInterval: 30_000,
     initialPageParam: 0 as number,
     queryFn: async ({ pageParam }) => {
       const supabase = createClient();
@@ -83,6 +85,7 @@ export function useTransactions(filters: TransactionFilters = DEFAULT_FILTERS) {
       if (filters.categories.length > 0)   q = q.in("category", filters.categories) as typeof q;
       if (filters.search.trim())            q = q.ilike("description", `%${filters.search.trim()}%`) as typeof q;
       if (filters.paymentMethod)           q = q.contains("tags", [filters.paymentMethod]) as typeof q;
+      if (filters.context)                 q = q.eq("context", filters.context) as typeof q;
 
       const range = resolveDateRange(filters);
       if (range) q = q.gte("date", range.start).lte("date", range.end) as typeof q;
@@ -108,9 +111,10 @@ export function useTransactionStats(filters: TransactionFilters = DEFAULT_FILTER
   const uid = user?.id;
 
   return useQuery({
-    queryKey:  ["transaction-stats", uid, filters],
-    enabled:   !!uid,
-    staleTime: 30_000,
+    queryKey:        ["transaction-stats", uid, filters],
+    enabled:         !!uid,
+    staleTime:       30_000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const supabase = createClient();
       let q = supabase
@@ -122,6 +126,7 @@ export function useTransactionStats(filters: TransactionFilters = DEFAULT_FILTER
       if (filters.categories.length > 0)   q = q.in("category", filters.categories) as typeof q;
       if (filters.search.trim())            q = q.ilike("description", `%${filters.search.trim()}%`) as typeof q;
       if (filters.paymentMethod)           q = q.contains("tags", [filters.paymentMethod]) as typeof q;
+      if (filters.context)                 q = q.eq("context", filters.context) as typeof q;
 
       const range = resolveDateRange(filters);
       if (range) q = q.gte("date", range.start).lte("date", range.end) as typeof q;
@@ -139,6 +144,28 @@ export function useTransactionStats(filters: TransactionFilters = DEFAULT_FILTER
         netBalance: totalIncome - totalExpenses,
         count:      rows.length,
       };
+    },
+  });
+}
+
+// ─── useTransactionById ───────────────────────────────────────────────────────
+
+export function useTransactionById(id: string | null) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey:        ["transaction", id],
+    enabled:         !!user?.id && !!id,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("id", id!)
+        .single();
+      if (error) throw error;
+      return data as Transaction;
     },
   });
 }
@@ -161,6 +188,7 @@ export function useDeleteTransaction() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["transaction"] });
       qc.invalidateQueries({ queryKey: ["transaction-stats"] });
       qc.invalidateQueries({ queryKey: ["dashboard-transactions"] });
       qc.invalidateQueries({ queryKey: ["budgets"] });
@@ -197,6 +225,7 @@ export function useUpdateTransaction() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["transaction"] });
       qc.invalidateQueries({ queryKey: ["transaction-stats"] });
       qc.invalidateQueries({ queryKey: ["dashboard-transactions"] });
       qc.invalidateQueries({ queryKey: ["budgets"] });

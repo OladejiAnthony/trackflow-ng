@@ -93,8 +93,8 @@ function mapTransactionToForm(tx: Transaction): FormValues {
     note:               tx.note ?? "",
     is_recurring:       tx.is_recurring ?? false,
     recurring_interval: (tx.recurring_interval as FormValues["recurring_interval"]) ?? undefined,
-    add_to_family:      tags.includes("family"),
-    add_to_business:    tags.includes("business"),
+    add_to_family:      (tx as { context?: string }).context === "family" || tags.includes("family"),
+    add_to_business:    (tx as { context?: string }).context === "business" || tags.includes("business"),
   };
 }
 
@@ -111,9 +111,11 @@ function CategoryDropdown({
   transactionType: "income" | "expense" | "transfer";
   error?: string;
 }) {
-  const [open, setOpen]     = useState(false);
-  const [search, setSearch] = useState("");
-  const ref                 = useRef<HTMLDivElement>(null);
+  const [open, setOpen]           = useState(false);
+  const [search, setSearch]       = useState("");
+  const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+  const ref                       = useRef<HTMLDivElement>(null);
+  const buttonRef                 = useRef<HTMLButtonElement>(null);
 
   const dbType = transactionType === "transfer" ? "expense" : transactionType;
 
@@ -127,6 +129,13 @@ function CategoryDropdown({
     ? TRANSACTION_CATEGORIES[value as keyof typeof TRANSACTION_CATEGORIES]
     : null;
 
+  function updatePosition() {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownStyle({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+    }
+  }
+
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -134,9 +143,18 @@ function CategoryDropdown({
         setSearch("");
       }
     }
+    function handleScrollOrResize() {
+      if (open) updatePosition();
+    }
     if (open) {
       document.addEventListener("mousedown", handleOutside);
-      return () => document.removeEventListener("mousedown", handleOutside);
+      window.addEventListener("scroll", handleScrollOrResize, true);
+      window.addEventListener("resize", handleScrollOrResize);
+      return () => {
+        document.removeEventListener("mousedown", handleOutside);
+        window.removeEventListener("scroll", handleScrollOrResize, true);
+        window.removeEventListener("resize", handleScrollOrResize);
+      };
     }
   }, [open]);
 
@@ -146,8 +164,13 @@ function CategoryDropdown({
         Category <span className="text-red-400">*</span>
       </label>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (next) updatePosition();
+        }}
         className={cn(
           "w-full flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all",
           "bg-white/5 text-white",
@@ -183,7 +206,8 @@ function CategoryDropdown({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.12 }}
-            className="absolute top-full left-0 right-0 z-[60] mt-1.5 bg-[#0D1B3E] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+            style={{ top: dropdownStyle.top, left: dropdownStyle.left, width: dropdownStyle.width }}
+            className="fixed z-[9999] bg-[#0D1B3E] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
           >
             <div className="p-2 border-b border-white/10">
               <div className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg">
@@ -372,6 +396,8 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
       if (data.add_to_family) tags.push("family");
       if (data.add_to_business) tags.push("business");
 
+      const context = data.add_to_family ? "family" : data.add_to_business ? "business" : "personal";
+
       if (isEditing) {
         // ── Edit existing transaction ──────────────────────────────────────
         const { error: txErr } = await supabase
@@ -384,6 +410,7 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
             date:               data.date,
             note:               data.note?.trim() || null,
             tags:               tags.length > 0 ? tags : null,
+            context,
             is_recurring:       data.is_recurring,
             recurring_interval: data.is_recurring ? (data.recurring_interval ?? null) : null,
             updated_at:         new Date().toISOString(),
@@ -430,6 +457,7 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
           note:               data.note?.trim() || null,
           tags:               tags.length > 0 ? tags : null,
           receipt_url,
+          context,
           is_recurring:       data.is_recurring,
           recurring_interval: data.is_recurring ? (data.recurring_interval ?? null) : null,
         });

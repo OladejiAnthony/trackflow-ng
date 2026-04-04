@@ -4,6 +4,8 @@ export * from "./database";
 
 export type AccountType = "individual" | "family" | "business";
 export type TransactionType = "income" | "expense";
+export type TransactionContext = "personal" | "family" | "business";
+export type FamilyMemberRole = "admin" | "member";
 export type BudgetPeriod = "weekly" | "monthly" | "yearly";
 export type PlanType = "free" | "pro" | "business";
 

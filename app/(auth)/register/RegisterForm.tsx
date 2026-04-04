@@ -241,9 +241,9 @@ export default function RegisterForm() {
           className="mb-4"
         />
         <h1 className="text-2xl font-bold font-display text-white tracking-tight">
-          {step === 1 && "Choose account type"}
-          {step === 2 && "Create your account"}
-          {step === 3 && "Verify your email"}
+          {step === 1 && "Choose Account Type"}
+          {step === 2 && "Create Your Account"}
+          {step === 3 && "Verify Your Email"}
         </h1>
         <p className="text-slate-400 text-sm mt-1">
           {step === 1 && "Select how you'll use TrackFlow"}

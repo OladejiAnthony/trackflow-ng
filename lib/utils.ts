@@ -158,6 +158,17 @@ export const TRANSACTION_CATEGORIES = {
   giving:        { label: "Giving",           emoji: "🙏",  color: "#a78bfa", type: "expense" },
   data:          { label: "Data/Airtime",    emoji: "📶",  color: "#38bdf8", type: "expense" },
   other_expense: { label: "Other Expense",   emoji: "💸",  color: "#94a3b8", type: "expense" },
+  // Business income
+  product_sales: { label: "Product Sales",   emoji: "📦",  color: "#22c55e", type: "income"  },
+  service_fees:  { label: "Service Fees",    emoji: "🔧",  color: "#16a34a", type: "income"  },
+  online_sales:  { label: "Online Sales",    emoji: "🛒",  color: "#15803d", type: "income"  },
+  market_sales:  { label: "Market Sales",    emoji: "🏪",  color: "#166534", type: "income"  },
+  // Business expenses
+  inventory_stock: { label: "Inventory/Stock", emoji: "📋", color: "#ea580c", type: "expense" },
+  staff_salary:  { label: "Staff Salary",    emoji: "👥",  color: "#dc2626", type: "expense" },
+  delivery:      { label: "Delivery",        emoji: "🚚",  color: "#d97706", type: "expense" },
+  marketing_ads: { label: "Marketing/Ads",   emoji: "📣",  color: "#7c3aed", type: "expense" },
+  equipment:     { label: "Equipment",       emoji: "⚙️",  color: "#0891b2", type: "expense" },
 } as const;
 
 export type TransactionCategory = keyof typeof TRANSACTION_CATEGORIES;

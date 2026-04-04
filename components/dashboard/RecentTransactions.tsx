@@ -18,13 +18,18 @@ function paymentTag(tags: string[] | null, note: string | null): string | null {
   return null;
 }
 
-export default function RecentTransactions() {
+type TxRow = { id: string; description: string; category: string; type: string; amount: number; date: string; tags: string[] | null; note: string | null; [key: string]: unknown };
+
+export default function RecentTransactions({ initialData }: { initialData?: TxRow[] }) {
   const { user } = useAuth();
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["dashboard-transactions", user?.id],
-    enabled:  !!user?.id,
-    staleTime: 30_000,
+    queryKey:             ["dashboard-transactions", user?.id],
+    enabled:              !!user?.id,
+    staleTime:            30_000,
+    refetchInterval:      30_000,
+    initialData:          initialData,
+    initialDataUpdatedAt: initialData ? Date.now() : undefined,
     queryFn: async () => {
       const supabase = createClient();
       const { data } = await supabase

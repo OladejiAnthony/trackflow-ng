@@ -249,3 +249,136 @@ drop trigger if exists on_profile_created on public.profiles;
 create trigger on_profile_created
   after insert on public.profiles
   for each row execute procedure public.handle_new_profile();
+
+-- ──────────────────────────────────────────────────────────────
+-- TRANSACTION CONTEXT (run separately if tables already exist)
+-- ──────────────────────────────────────────────────────────────
+alter table public.transactions
+  add column if not exists context text not null default 'personal'
+  check (context in ('personal','family','business'));
+
+-- ──────────────────────────────────────────────────────────────
+-- FAMILY GROUPS
+-- ──────────────────────────────────────────────────────────────
+create table if not exists public.family_groups (
+  id           uuid primary key default gen_random_uuid(),
+  name         text not null,
+  created_by   uuid not null references public.profiles(id) on delete cascade,
+  invite_code  text unique not null,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+alter table public.family_groups enable row level security;
+
+create policy "owner_all_family_groups" on public.family_groups
+  using (created_by = auth.uid()) with check (created_by = auth.uid());
+
+create policy "member_read_family_groups" on public.family_groups for select
+  using (exists (
+    select 1 from public.family_members fm
+    where fm.family_id = family_groups.id and fm.user_id = auth.uid()
+  ));
+
+create trigger family_groups_updated_at
+  before update on public.family_groups
+  for each row execute procedure public.set_updated_at();
+
+-- ──────────────────────────────────────────────────────────────
+-- FAMILY MEMBERS
+-- ──────────────────────────────────────────────────────────────
+create table if not exists public.family_members (
+  id         uuid primary key default gen_random_uuid(),
+  family_id  uuid not null references public.family_groups(id) on delete cascade,
+  user_id    uuid not null references public.profiles(id) on delete cascade,
+  role       text not null default 'member' check (role in ('admin','member')),
+  joined_at  timestamptz not null default now(),
+  unique(family_id, user_id)
+);
+
+alter table public.family_members enable row level security;
+
+create policy "family_members_read" on public.family_members for select
+  using (user_id = auth.uid() or exists (
+    select 1 from public.family_members fm
+    where fm.family_id = family_members.family_id and fm.user_id = auth.uid()
+  ));
+
+create policy "family_admin_insert" on public.family_members for insert
+  with check (
+    user_id = auth.uid()
+    or exists (
+      select 1 from public.family_members fm
+      where fm.family_id = family_members.family_id
+        and fm.user_id = auth.uid() and fm.role = 'admin'
+    )
+  );
+
+create policy "family_admin_delete" on public.family_members for delete
+  using (user_id = auth.uid() or exists (
+    select 1 from public.family_members fm
+    where fm.family_id = family_members.family_id
+      and fm.user_id = auth.uid() and fm.role = 'admin'
+  ));
+
+-- ──────────────────────────────────────────────────────────────
+-- FAMILY INVITES
+-- ──────────────────────────────────────────────────────────────
+create table if not exists public.family_invites (
+  id           uuid primary key default gen_random_uuid(),
+  family_id    uuid not null references public.family_groups(id) on delete cascade,
+  email        text,
+  invite_code  text unique not null,
+  expires_at   timestamptz not null,
+  accepted     boolean not null default false,
+  accepted_by  uuid references public.profiles(id),
+  created_at   timestamptz not null default now()
+);
+
+alter table public.family_invites enable row level security;
+
+create policy "family_invites_read" on public.family_invites for select
+  using (
+    accepted_by = auth.uid()
+    or exists (
+      select 1 from public.family_members fm
+      where fm.family_id = family_invites.family_id and fm.user_id = auth.uid()
+    )
+  );
+
+create policy "family_invites_insert" on public.family_invites for insert
+  with check (exists (
+    select 1 from public.family_members fm
+    where fm.family_id = family_invites.family_id
+      and fm.user_id = auth.uid() and fm.role = 'admin'
+  ));
+
+create policy "family_invites_update" on public.family_invites for update
+  using (exists (
+    select 1 from public.family_members fm
+    where fm.family_id = family_invites.family_id and fm.user_id = auth.uid()
+  ));
+
+-- ──────────────────────────────────────────────────────────────
+-- INVENTORY ITEMS (business module)
+-- ──────────────────────────────────────────────────────────────
+create table if not exists public.inventory_items (
+  id                   uuid primary key default gen_random_uuid(),
+  user_id              uuid not null references public.profiles(id) on delete cascade,
+  name                 text not null,
+  quantity             integer not null default 0,
+  cost_price           numeric(15,2) not null default 0,
+  selling_price        numeric(15,2) not null default 0,
+  low_stock_threshold  integer not null default 5,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now()
+);
+
+alter table public.inventory_items enable row level security;
+
+create policy "user_all_inventory" on public.inventory_items
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+create trigger inventory_items_updated_at
+  before update on public.inventory_items
+  for each row execute procedure public.set_updated_at();

@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Camera, User, Calendar, MapPin, Bell, ArrowRight, Loader2 } from "lucide-react";
+import { Camera, User, Calendar, MapPin, ArrowRight, Loader2 } from "lucide-react";
 import { AppButton as Button } from "@/components/ui/AppButton";
 import { Alert } from "@/components/ui/Alert";
 import { saveOnboardingProfile } from "../actions";
@@ -18,15 +18,6 @@ const NIGERIAN_STATES = [
   "Taraba","Yobe","Zamfara",
 ];
 
-const NOTIFICATION_HOURS = [
-  { value: "6",  label: "6:00 AM"  }, { value: "7",  label: "7:00 AM"  },
-  { value: "8",  label: "8:00 AM"  }, { value: "9",  label: "9:00 AM"  },
-  { value: "10", label: "10:00 AM" }, { value: "11", label: "11:00 AM" },
-  { value: "12", label: "12:00 PM" }, { value: "18", label: "6:00 PM"  },
-  { value: "19", label: "7:00 PM"  }, { value: "20", label: "8:00 PM"  },
-  { value: "21", label: "9:00 PM"  },
-];
-
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function SetupProfilePage() {
@@ -38,7 +29,6 @@ export default function SetupProfilePage() {
   const [uploading, setUploading]         = useState(false);
   const [dob, setDob]                     = useState("");
   const [state, setState]                 = useState("");
-  const [notifHour, setNotifHour]         = useState("8");
   const [error, setError]                 = useState<string | null>(null);
   const [isPending, startTransition]      = useTransition();
 
@@ -83,7 +73,6 @@ export default function SetupProfilePage() {
       if (avatarUrl) fd.set("avatar_url", avatarUrl);
       if (dob)       fd.set("date_of_birth", dob);
       if (state)     fd.set("state", state);
-      fd.set("notification_hour", notifHour);
 
       const result = await saveOnboardingProfile(fd);
       if (result?.error) {
@@ -180,26 +169,6 @@ export default function SetupProfilePage() {
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-        </div>
-
-        {/* Notification time */}
-        <div>
-          <label className="flex items-center gap-1.5 text-sm font-medium text-slate-300 mb-1.5">
-            <Bell className="w-4 h-4 opacity-60" />
-            Preferred notification time
-          </label>
-          <select
-            value={notifHour}
-            onChange={(e) => setNotifHour(e.target.value)}
-            className="input-field"
-          >
-            {NOTIFICATION_HOURS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-          <p className="mt-1.5 text-xs text-slate-500">
-            We&apos;ll send your daily money summary at this time.
-          </p>
         </div>
 
         {/* Actions */}

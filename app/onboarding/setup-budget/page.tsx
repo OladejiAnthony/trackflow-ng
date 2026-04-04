@@ -17,16 +17,16 @@ const EXPENSE_CATS = Object.entries(TRANSACTION_CATEGORIES)
 const MAX_CATS = 5;
 
 const MORNING_HOURS = [
-  { value: "5",  label: "5:00 AM"  }, { value: "6",  label: "6:00 AM"  },
-  { value: "7",  label: "7:00 AM"  }, { value: "8",  label: "8:00 AM"  },
-  { value: "9",  label: "9:00 AM"  }, { value: "10", label: "10:00 AM" },
+  { value: "5", label: "5:00 AM" }, { value: "6", label: "6:00 AM" },
+  { value: "7", label: "7:00 AM" }, { value: "8", label: "8:00 AM" },
+  { value: "9", label: "9:00 AM" }, { value: "10", label: "10:00 AM" },
   { value: "11", label: "11:00 AM" },
 ];
 
 const EVENING_HOURS = [
-  { value: "17", label: "5:00 PM"  }, { value: "18", label: "6:00 PM"  },
-  { value: "19", label: "7:00 PM"  }, { value: "20", label: "8:00 PM"  },
-  { value: "21", label: "9:00 PM"  }, { value: "22", label: "10:00 PM" },
+  { value: "17", label: "5:00 PM" }, { value: "18", label: "6:00 PM" },
+  { value: "19", label: "7:00 PM" }, { value: "20", label: "8:00 PM" },
+  { value: "21", label: "9:00 PM" }, { value: "22", label: "10:00 PM" },
   { value: "23", label: "11:00 PM" },
 ];
 
@@ -41,21 +41,21 @@ function formatDisplayValue(raw: string): string {
 export default function SetupBudgetPage() {
   const router = useRouter();
 
-  const [income, setIncome]           = useState("");
+  const [income, setIncome] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
-  const [selected, setSelected]       = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
   const [morningHour, setMorningHour] = useState("8");
   const [eveningHour, setEveningHour] = useState("20");
-  const [error, setError]             = useState<string | null>(null);
-  const [isPending, startTransition]  = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   function toggleCategory(key: string) {
     setSelected((prev) =>
       prev.includes(key)
         ? prev.filter((k) => k !== key)
         : prev.length < MAX_CATS
-        ? [...prev, key]
-        : prev
+          ? [...prev, key]
+          : prev
     );
   }
 
@@ -98,7 +98,7 @@ export default function SetupBudgetPage() {
 
       <div className="glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-card-xl space-y-6 auth-panel">
         {error && <Alert variant="error">{error}</Alert>}
-
+        
         {/* Monthly income */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">
@@ -146,6 +146,7 @@ export default function SetupBudgetPage() {
 
         {/* Notification times */}
         <div className="grid grid-cols-2 gap-3">
+          <h3 className="col-span-2 text-sm font-semibold text-slate-200 mb-1">Set Notification Times</h3>
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-slate-300 mb-1.5">
               <Sun className="w-4 h-4 opacity-60" />
@@ -227,8 +228,8 @@ export default function SetupBudgetPage() {
                     isSelected
                       ? "border-brand-500 bg-brand-500/10"
                       : isDisabled
-                      ? "border-white/5 bg-white/[0.02] opacity-40 cursor-not-allowed"
-                      : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/[0.08]"
+                        ? "border-white/5 bg-white/[0.02] opacity-40 cursor-not-allowed"
+                        : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/[0.08]"
                   )}
                 >
                   <span className="text-lg flex-shrink-0">{emoji}</span>

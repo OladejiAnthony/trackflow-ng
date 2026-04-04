@@ -33,14 +33,26 @@ function pctChange(current: number, prev: number) {
   return ((current - prev) / Math.abs(prev)) * 100;
 }
 
-export default function BalanceCard() {
+type BalanceStats = {
+  balance: number;
+  income: number;
+  expenses: number;
+  balanceChange: number;
+  incomeChange: number;
+  expenseChange: number;
+};
+
+export default function BalanceCard({ initialData }: { initialData?: BalanceStats }) {
   const { user }            = useAuth();
   const [hidden, setHidden] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey:  ["balance-overview", user?.id],
-    enabled:   !!user?.id,
-    staleTime: 60_000,
+    queryKey:            ["balance-overview", user?.id],
+    enabled:             !!user?.id,
+    staleTime:           60_000,
+    refetchInterval:     30_000,
+    initialData:         initialData,
+    initialDataUpdatedAt: initialData ? Date.now() : undefined,
     queryFn: async () => {
       const supabase = createClient();
       const now        = new Date();

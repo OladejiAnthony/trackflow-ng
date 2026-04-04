@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import {
@@ -108,9 +109,12 @@ function CategoryMultiSelect({
   onChange: (v: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -122,8 +126,18 @@ function CategoryMultiSelect({
         setOpen(false);
       }
     }
+    function handleScrollOrResize() {
+      const r = buttonRef.current?.getBoundingClientRect();
+      if (r) setRect(r);
+    }
     document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      document.removeEventListener("mousedown", handle);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
   }, [open]);
 
   const allCategories = Object.entries(TRANSACTION_CATEGORIES);
@@ -139,18 +153,64 @@ function CategoryMultiSelect({
   }
 
   function handleOpen() {
-    const rect = buttonRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDropdownStyle({
+    const r = buttonRef.current?.getBoundingClientRect();
+    if (r) setRect(r);
+    setOpen((v) => !v);
+  }
+
+  const dropdownStyle: React.CSSProperties = rect
+    ? {
         position: "fixed",
         top: rect.bottom + 4,
         left: rect.left,
         width: Math.max(rect.width, 224),
-        zIndex: 9999,
-      });
-    }
-    setOpen((v) => !v);
-  }
+        zIndex: 99999,
+      }
+    : { position: "fixed", zIndex: 99999 };
+
+  const dropdown = (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          ref={dropdownRef}
+          style={dropdownStyle}
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.12 }}
+          className="bg-[#0D1B3E] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+        >
+          <div className="p-1.5 max-h-64 overflow-y-auto">
+            {allCategories.map(([key, meta]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => toggle(key)}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left transition-colors"
+              >
+                <span className="text-base leading-none">{meta.emoji}</span>
+                <span className="text-sm text-slate-300 flex-1">{meta.label}</span>
+                {selected.includes(key) && (
+                  <Check className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+          {selected.length > 0 && (
+            <div className="border-t border-white/10 p-1.5">
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="w-full text-xs text-slate-500 hover:text-slate-300 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 
   return (
     <div className="relative flex-shrink-0">
@@ -169,47 +229,7 @@ function CategoryMultiSelect({
         <ChevronDown className={cn("w-3 h-3 transition-transform", open && "rotate-180")} />
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            ref={dropdownRef}
-            style={dropdownStyle}
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.12 }}
-            className="bg-[#0D1B3E] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-          >
-            <div className="p-1.5 max-h-64 overflow-y-auto">
-              {allCategories.map(([key, meta]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => toggle(key)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left transition-colors"
-                >
-                  <span className="text-base leading-none">{meta.emoji}</span>
-                  <span className="text-sm text-slate-300 flex-1">{meta.label}</span>
-                  {selected.includes(key) && (
-                    <Check className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
-            {selected.length > 0 && (
-              <div className="border-t border-white/10 p-1.5">
-                <button
-                  type="button"
-                  onClick={() => onChange([])}
-                  className="w-full text-xs text-slate-500 hover:text-slate-300 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {mounted && createPortal(dropdown, document.body)}
     </div>
   );
 }
