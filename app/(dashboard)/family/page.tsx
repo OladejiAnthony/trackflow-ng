@@ -11,6 +11,7 @@ import {
 import {
   Users, Plus, Copy, Trash2, X, Home, LogIn,
   TrendingUp, TrendingDown, Wallet, Check,
+  PiggyBank, AlertTriangle,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +27,9 @@ import type { FamilyGroup, FamilyInvite } from "@/types";
 import { AppButton } from "@/components/ui/AppButton";
 import { Input } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
-import { formatNaira, getCategoryMeta, initials, colorFromString, cn } from "@/lib/utils";
+import { formatNaira, getCategoryMeta, initials, colorFromString, clampPercent, cn } from "@/lib/utils";
+import { useBudgets, type BudgetFull } from "@/lib/hooks/useBudgets";
+import { useGoals,   type GoalFull   } from "@/lib/hooks/useGoals";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -342,7 +345,7 @@ function SetupScreen() {
 // ─── FamilyDashboard ──────────────────────────────────────────────────────────
 
 function FamilyDashboard({ family }: { family: FamilyGroup }) {
-  const [tab, setTab] = useState<"overview" | "members" | "finance" | "invites">("overview");
+  const [tab, setTab] = useState<"overview" | "members" | "finance" | "budget" | "invites">("overview");
   const { user }      = useAuth();
 
   const { data: members = [], isLoading: membersLoading } = useFamilyMembers(family.id);
@@ -407,7 +410,7 @@ function FamilyDashboard({ family }: { family: FamilyGroup }) {
 
       {/* Tabs */}
       <div className="flex gap-1 flex-wrap">
-        {(["overview", "members", "finance", "invites"] as const).map(t => (
+        {(["overview", "members", "finance", "budget", "invites"] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -444,6 +447,13 @@ function FamilyDashboard({ family }: { family: FamilyGroup }) {
       {tab === "finance" && (
         <FinanceTab
           transactions={allTransactions}
+          members={members}
+          isLoading={txLoading}
+        />
+      )}
+      {tab === "budget" && (
+        <BudgetTab
+          allTransactions={allTransactions}
           members={members}
           isLoading={txLoading}
         />
@@ -774,6 +784,202 @@ function FinanceTab({ transactions, isLoading }: {
               );
             })}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── BudgetTab ────────────────────────────────────────────────────────────────
+
+function BudgetTab({
+  allTransactions,
+  members,
+  isLoading: txLoading,
+}: {
+  allTransactions: EnrichedTransaction[];
+  members: FamilyMemberWithProfile[];
+  isLoading: boolean;
+}) {
+  // Suppress unused type warnings — BudgetFull/GoalFull used via hook return types
+  void (null as unknown as BudgetFull);
+  void (null as unknown as GoalFull);
+
+  const { data: budgets = [], isLoading: budgetsLoading } = useBudgets();
+  const { data: goals   = [], isLoading: goalsLoading   } = useGoals();
+  const isLoading = txLoading || budgetsLoading || goalsLoading;
+
+  const now   = new Date();
+  const start = format(startOfMonth(now), "yyyy-MM-dd");
+  const end   = format(endOfMonth(now), "yyyy-MM-dd");
+
+  const familySpentByCategory = useMemo(() => {
+    const map = new Map<string, number>();
+    allTransactions
+      .filter(t => t.type === "expense" && t.date >= start && t.date <= end)
+      .forEach(t => { map.set(t.category, (map.get(t.category) ?? 0) + Number(t.amount)); });
+    return map;
+  }, [allTransactions, start, end]);
+
+  const memberSpendByCategory = useMemo(() => {
+    const map = new Map<string, Map<string, number>>();
+    allTransactions
+      .filter(t => t.type === "expense" && t.date >= start && t.date <= end)
+      .forEach(t => {
+        if (!map.has(t.category)) map.set(t.category, new Map());
+        const inner = map.get(t.category)!;
+        inner.set(t.user_id, (inner.get(t.user_id) ?? 0) + Number(t.amount));
+      });
+    return map;
+  }, [allTransactions, start, end]);
+
+  const activeGoals = useMemo(() => goals.filter(g => !g.is_completed), [goals]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl skeleton" />)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* ── Family Budgets ── */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <Wallet className="w-4 h-4 text-brand-500" />
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Family Budgets This Month</h3>
+        </div>
+
+        {budgets.length === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-4">
+            No budgets set.{" "}
+            <a href="/budgets" className="text-brand-500 hover:underline">Create budgets</a> to track family spending.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {budgets.map(b => {
+              const familySpent = familySpentByCategory.get(b.category) ?? 0;
+              const pct         = clampPercent((familySpent / b.amount) * 100);
+              const isOver      = familySpent > b.amount;
+              const isWarn      = !isOver && pct >= b.alert_threshold;
+              const barColor    = isOver ? "bg-red-500" : isWarn ? "bg-gold-500" : "bg-brand-500";
+              const meta        = getCategoryMeta(b.category);
+              const memberSpend = memberSpendByCategory.get(b.category);
+
+              return (
+                <div key={b.id} className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{meta.emoji}</span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{meta.label}</span>
+                      {isOver && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                    </div>
+                    <div className="text-right">
+                      <span className={cn("text-sm font-semibold tabular-nums", isOver ? "text-red-500" : "text-slate-800 dark:text-slate-100")}>
+                        {formatNaira(familySpent, { compact: true })}
+                      </span>
+                      <span className="text-xs text-slate-400"> / {formatNaira(b.amount, { compact: true })}</span>
+                    </div>
+                  </div>
+
+                  <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <motion.div
+                      className={cn("h-full rounded-full", barColor)}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                    />
+                  </div>
+
+                  {memberSpend && memberSpend.size > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-0.5">
+                      {[...memberSpend.entries()].map(([uid, spent]) => {
+                        const m    = members.find(x => x.user_id === uid);
+                        const name = m?.profile.full_name ?? m?.profile.email ?? uid;
+                        return (
+                          <div key={uid} className="flex items-center gap-1.5 text-xs text-slate-500">
+                            <MemberAvatar name={name} size="sm" />
+                            <span>{formatNaira(spent, { compact: true })}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Savings Goals ── */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <PiggyBank className="w-4 h-4 text-brand-500" />
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Savings Goals</h3>
+          </div>
+          <a href="/savings" className="text-xs text-brand-500 hover:underline">Manage →</a>
+        </div>
+
+        {activeGoals.length === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-4">
+            No active goals.{" "}
+            <a href="/savings" className="text-brand-500 hover:underline">Create one</a>
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-700/40 p-3 text-center">
+                <p className="text-xs text-slate-500">Total Saved</p>
+                <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                  {formatNaira(activeGoals.reduce((s, g) => s + g.current_amount, 0), { compact: true })}
+                </p>
+              </div>
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-700/40 p-3 text-center">
+                <p className="text-xs text-slate-500">Total Target</p>
+                <p className="text-base font-bold text-slate-800 dark:text-slate-100">
+                  {formatNaira(activeGoals.reduce((s, g) => s + g.target_amount, 0), { compact: true })}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {activeGoals.map(g => {
+                const color = g.color ?? "#1a4ff5";
+                return (
+                  <div key={g.id} className="flex items-center gap-3 py-2.5 border-b border-slate-100 dark:border-slate-700 last:border-0">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
+                      style={{ backgroundColor: `${color}1a` }}
+                    >
+                      {g.icon ?? "🎯"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{g.name}</p>
+                      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full mt-1 overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: color }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${clampPercent(g.percentage)}%` }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 tabular-nums">
+                        {formatNaira(g.current_amount, { compact: true })}
+                      </p>
+                      <p className="text-xs text-slate-500">{g.percentage.toFixed(0)}%</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -500,9 +500,13 @@ function TransactionFormContent({ onClose }: { onClose: () => void }) {
       setReceiptFile(null);
       handleClose();
     } catch (err) {
-      toast.error("Failed to save", {
-        description: err instanceof Error ? err.message : "Something went wrong",
-      });
+      const description =
+        err != null && typeof err === "object" && "message" in err
+          ? String((err as { message: unknown }).message)
+          : err instanceof Error
+          ? err.message
+          : "Something went wrong";
+      toast.error("Failed to save", { description });
     } finally {
       setSubmitting(false);
     }
