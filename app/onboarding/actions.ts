@@ -17,8 +17,10 @@ export async function saveAccountType(formData: FormData) {
 
   const { error } = await supabase
     .from("profiles")
-    .update({ account_type: account_type as "individual" | "family" | "business" })
-    .eq("id", user.id);
+    .upsert(
+      { id: user.id, email: user.email ?? "", account_type: account_type as "individual" | "family" | "business" },
+      { onConflict: "id" }
+    );
 
   if (error) return { error: error.message };
   return { success: true };

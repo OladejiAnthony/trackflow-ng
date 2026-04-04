@@ -68,6 +68,10 @@ export default function SetupProfilePage() {
 
   function handleSubmit() {
     setError(null);
+    if (!dob || !state) {
+      setError("Please enter your date of birth and state to continue.");
+      return;
+    }
     startTransition(async () => {
       const fd = new FormData();
       if (avatarUrl) fd.set("avatar_url", avatarUrl);
@@ -141,7 +145,6 @@ export default function SetupProfilePage() {
           <label className="flex items-center gap-1.5 text-sm font-medium text-slate-300 mb-1.5">
             <Calendar className="w-4 h-4 opacity-60" />
             Date of birth
-            <span className="text-slate-600 font-normal">(optional)</span>
           </label>
           <input
             type="date"
@@ -157,7 +160,6 @@ export default function SetupProfilePage() {
           <label className="flex items-center gap-1.5 text-sm font-medium text-slate-300 mb-1.5">
             <MapPin className="w-4 h-4 opacity-60" />
             State in Nigeria
-            <span className="text-slate-600 font-normal">(optional)</span>
           </label>
           <select
             value={state}
@@ -179,6 +181,7 @@ export default function SetupProfilePage() {
             fullWidth
             size="lg"
             loading={isPending || uploading}
+            disabled={!dob || !state}
             onClick={handleSubmit}
           >
             Save &amp; Continue

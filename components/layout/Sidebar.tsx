@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,7 +24,7 @@ import { cn, initials } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAppStore } from "@/store/useAppStore";
 import { AppButton } from "@/components/ui/AppButton";
-import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/hooks/useProfile";
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard",     href: "/dashboard",  premium: false, accountType: null },
@@ -51,18 +51,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router   = useRouter();
   const { user } = useAuth();
-  const { profile, setProfile, setLogoutModalOpen } = useAppStore();
+  const { profile, setLogoutModalOpen } = useAppStore();
 
-  useEffect(() => {
-    if (!user || profile) return;
-    const supabase = createClient();
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => { if (data) setProfile(data); });
-  }, [user, profile, setProfile]);
+  useProfile();
 
   const displayName = profile?.full_name ?? user?.email ?? "User";
   const accountType = profile?.account_type ?? "individual";
