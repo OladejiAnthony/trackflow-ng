@@ -51,16 +51,23 @@ export async function registerWithEmail(formData: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { full_name, phone, account_type, business_name: business_name || null },
-      emailRedirectTo: `${origin}/api/auth/callback?next=/onboarding/welcome`,
+      emailRedirectTo: `${origin}/api/auth/callback?next=/onboarding/account-type`,
     },
   });
 
   if (error) return { error: mapAuthError(error.message) };
+
+  // When email confirmation is DISABLED, Supabase returns a session immediately.
+  // Redirect to onboarding so the user completes account-type selection.
+  if (data.session) {
+    redirect("/onboarding/account-type");
+  }
+
   return { success: true };
 }
 

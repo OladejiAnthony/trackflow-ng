@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import { Check, ArrowRight } from "lucide-react";
 import { AppButton as Button } from "@/components/ui/AppButton";
@@ -37,6 +38,26 @@ export default function AccountTypePage() {
   const [selected, setSelected] = useState<AccountTypeValue>("individual");
   const [error, setError]       = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Pre-select the account type already stored on the profile (set by the
+  // handle_new_user trigger during registration) so we don't accidentally
+  // overwrite a correctly-set "family" or "business" with the "individual" default.
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("profiles")
+        .select("account_type")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.account_type && ACCOUNT_TYPES.some(t => t.value === data.account_type)) {
+            setSelected(data.account_type as AccountTypeValue);
+          }
+        });
+    });
+  }, []);
 
   function handleContinue() {
     setError(null);

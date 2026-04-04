@@ -197,7 +197,8 @@ export default function RegisterForm() {
       fd.set("password", data.password);
       fd.set("full_name", data.full_name);
       fd.set("phone", `+234${data.phone}`);
-      fd.set("account_type", accountType!);
+      const dbAccountType = accountType === "sme" ? "business" : accountType;
+      fd.set("account_type", dbAccountType!);
       if (data.business_name) fd.set("business_name", data.business_name);
 
       const result = await registerWithEmail(fd);
